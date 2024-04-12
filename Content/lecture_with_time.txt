@@ -1,0 +1,839 @@
+
+[00:00:00.000 --> 00:00:05.480]   Yeah, so welcome to the lecture. Today we're going to follow up on a little bit
+[00:00:05.480 --> 00:00:11.080]   on the last chapter and then go into light and matter. Bounding volume
+[00:00:11.080 --> 00:00:14.640]   hierarchies, you know, we're saying that for ray tracing it is essential to
+[00:00:14.640 --> 00:00:20.280]   structure the geometric complexity of the scene and there are two ways to do it.
+[00:00:20.280 --> 00:00:27.560]   Either you can structure space in ideally hierarchical fashion with the BSB
+[00:00:27.560 --> 00:00:36.360]   trees or oak trees or others and or you structure the objects themselves and
+[00:00:36.360 --> 00:00:43.040]   both have pros and cons. I mean you can also build a hierarchy around the
+[00:00:43.040 --> 00:00:47.560]   objects and you know the different which has the advantage that you don't need
+[00:00:47.560 --> 00:00:52.440]   to understand the extent of the scene and if for instance a lot of objects are
+[00:00:52.440 --> 00:00:58.880]   very unevenly distributed in space you can imagine that a spatial structuring
+[00:00:58.880 --> 00:01:03.080]   might always be inefficient even though you have a lot of empty space and the
+[00:01:03.080 --> 00:01:07.840]   empty space can be represented by very large cells it's still probably less
+[00:01:07.840 --> 00:01:14.000]   efficient than going by object and there is another difference the whenever all
+[00:01:14.000 --> 00:01:18.240]   these hierarchical data structures we have seen for spatial subdivision they
+[00:01:18.240 --> 00:01:24.960]   divide this space into disjoint polytopes literally and disjoint sub volumes if you
+[00:01:24.960 --> 00:01:33.480]   will in a bounding volume hierarchy around objects the sort of the the
+[00:01:33.480 --> 00:01:38.240]   different levels of a hierarchy they can potentially overlap depending on
+[00:01:38.240 --> 00:01:44.120]   whatever the primitive is you use for packing. There's also hardware
+[00:01:44.120 --> 00:01:48.560]   acceleration as I will show you in a moment for those on the latest version
+[00:01:48.560 --> 00:01:52.080]   ever since I think the touring architecture of NVIDIA when they
+[00:01:52.080 --> 00:01:56.120]   introduced ray tracing it's all about you know how can we accelerate the ray
+[00:01:56.120 --> 00:02:03.440]   testing and this is also partly done on hardware. As said spatial sorting we call
+[00:02:03.440 --> 00:02:07.720]   it a spatial subdivision and these bounding volumes by the way these data
+[00:02:07.720 --> 00:02:13.560]   structures for the bounding volume hierarchies they are also very relevant
+[00:02:13.560 --> 00:02:19.560]   for collision detection and if you attend the physics simulation lecture you
+[00:02:19.560 --> 00:02:25.800]   will see a lot is in physics is about collision of individual objects and how
+[00:02:25.800 --> 00:02:30.360]   to detect it and this also amounts to testing objects with respect to each
+[00:02:30.360 --> 00:02:33.880]   other and if you think about this problem it is almost equivalent to our
+[00:02:33.880 --> 00:02:38.480]   ray testing because objects consist of triangles, triangles consist of lines, you
+[00:02:38.480 --> 00:02:44.880]   have to compute line intersections and so forth and it is very clear that to
+[00:02:44.880 --> 00:02:50.880]   compute reliably the collision of two complex objects you might want to
+[00:02:50.880 --> 00:02:55.880]   definitely work with a bounding volume hierarchies. As said I just repeated very
+[00:02:55.880 --> 00:03:00.040]   quickly spheres very good but in some cases depending on the primitive
+[00:03:00.040 --> 00:03:04.720]   arrangement not so good then there is the other one access line bounding boxes
+[00:03:04.720 --> 00:03:11.400]   these are the most they probably give you a good trade-off between the packing
+[00:03:11.400 --> 00:03:18.440]   and the efficiency of the representation so these are always aligned to the main
+[00:03:18.440 --> 00:03:22.480]   axis of coordinate system of course depending on distribution you might
+[00:03:22.480 --> 00:03:26.880]   end up in poor packing then they are oriented bounding boxes all of those
+[00:03:26.880 --> 00:03:31.960]   literally if you look up the literature you will find them for collision
+[00:03:31.960 --> 00:03:36.200]   detection for physics based simulation even in robotics of course there's a lot
+[00:03:36.200 --> 00:03:43.080]   of collision detection same thing so this is object oriented and also if you
+[00:03:43.080 --> 00:03:50.040]   have very sort of uneven distributions they can go to their limits and so these
+[00:03:50.040 --> 00:03:57.120]   bounding volumes they go with increasing complexity of the data structure
+[00:03:57.120 --> 00:04:02.440]   but the increasing complexity comes along with the tighter packing of the
+[00:04:02.440 --> 00:04:07.120]   volume down to probably the most complex one which would be the computation of
+[00:04:07.120 --> 00:04:12.080]   the convex hull to my knowledge the convex hull even though it's very in a
+[00:04:12.080 --> 00:04:17.880]   very important concept in computational geometry I cannot remember that it's
+[00:04:17.880 --> 00:04:23.480]   being used a huge lot in those graphics practical applications at least not in
+[00:04:23.480 --> 00:04:29.600]   graphics me maybe in robotics a little bit more for some but it is more like
+[00:04:29.600 --> 00:04:37.120]   conceptually of course the best possible packing and I mentioned all of this the
+[00:04:37.120 --> 00:04:42.320]   construction of bounding volume hierarchies we do it here with fears can
+[00:04:42.320 --> 00:04:48.560]   either be top down or bottom up so if you go top down then you would want to
+[00:04:48.560 --> 00:04:56.120]   compute a circumscribing sphere around you know the entirety of all objects and
+[00:04:56.120 --> 00:05:02.880]   then as you can see you go down the hierarchy you built your tree and as you
+[00:05:02.880 --> 00:05:08.440]   built the tree you create these sub packages right and sub spheres and then
+[00:05:08.440 --> 00:05:14.800]   you have this hierarchy of fears literally you can use for a traversal so
+[00:05:14.800 --> 00:05:19.080]   you would also if you traverse this data structure was a very obviously you start
+[00:05:19.080 --> 00:05:23.800]   from the top and then go into the different ones and you can do an easy
+[00:05:23.800 --> 00:05:31.680]   reject remember raise fear intersection is very important here you need it even
+[00:05:31.680 --> 00:05:37.080]   if you're seen as entirely made up by triangles the ability to intersect a
+[00:05:37.080 --> 00:05:43.480]   ray with the sphere is an important one for such data structures because you
+[00:05:43.480 --> 00:05:49.400]   would mostly intersect the ray with sort of the bounding volume which is a sphere
+[00:05:49.400 --> 00:05:55.280]   and this is also why we looked into this non-intuitive way of computing the
+[00:05:55.280 --> 00:05:58.840]   rays fear intersection if you remember we had an itch a prior one which
+[00:05:58.840 --> 00:06:02.640]   everybody can quickly write on paper it's closed form and then there's this
+[00:06:02.640 --> 00:06:08.560]   geometric one which goes in steps and each step you can reject the ray quickly
+[00:06:08.560 --> 00:06:14.160]   so you find out the ray at all intersects which is extremely useful in such a
+[00:06:14.160 --> 00:06:22.080]   context doesn't make sense to everybody good bottom up same thing so you would
+[00:06:22.080 --> 00:06:27.840]   start with probably circumscribing spheres for each separate object and
+[00:06:27.840 --> 00:06:34.480]   then build them into larger structures and of course you can imagine that there
+[00:06:34.480 --> 00:06:39.640]   is certainly a parameter which is probably like the distance of the
+[00:06:39.640 --> 00:06:44.080]   centers of the individual spheres that give you a criterion whether we want to
+[00:06:44.080 --> 00:06:50.480]   in the next step unify or not yet unify so it's it's all like clusterings so for
+[00:06:50.480 --> 00:06:57.120]   those of you who are familiar in in and basically in computer vision and
+[00:06:57.120 --> 00:07:04.160]   related fields the notion of clustering or simply in data analysis so there's
+[00:07:04.160 --> 00:07:10.600]   King means clustering which is sort of related where you really collect data
+[00:07:10.600 --> 00:07:15.920]   that is in whatever configuration space of feature space close to each other you
+[00:07:15.920 --> 00:07:22.120]   put them into the same cluster so it has similar properties it's non-supervised
+[00:07:22.120 --> 00:07:33.600]   learning if you will so here we go and then finally have the hierarchy so the
+[00:07:33.600 --> 00:07:43.240]   when you when you it is also you can also construct them by insertion that's
+[00:07:43.240 --> 00:07:48.160]   illustrated right here so basically you start from one object and then you insert
+[00:07:48.160 --> 00:07:54.800]   another one the next one and you cluster them you insert one more you cluster
+[00:07:54.800 --> 00:07:59.880]   insert a second one and you decide that they are too far apart so you have to
+[00:07:59.880 --> 00:08:07.080]   subdivide the clusters and finally you get your final structure here's
+[00:08:07.080 --> 00:08:11.160]   interestingly I don't want to go into the details but for those of you who are
+[00:08:11.160 --> 00:08:15.320]   interested in how this all is implemented we have this bounding volume
+[00:08:15.320 --> 00:08:24.160]   hierarchy the traversal and also the data structures represented in different
+[00:08:24.160 --> 00:08:29.280]   levels of compactness because a lot especially if you want to implement it
+[00:08:29.280 --> 00:08:37.200]   on hardware you might want to implement it in a very compact fashion and so
+[00:08:37.200 --> 00:08:40.640]   that's the rest of the slides which I don't go through you can look at it it's
+[00:08:40.640 --> 00:08:47.640]   funny but how how you can very compactly store you know individual elements of
+[00:08:47.640 --> 00:08:54.440]   your representation in one data record instead I want to just quickly show you
+[00:08:54.440 --> 00:08:59.800]   without going too much into the details but here is there are lots of resources
+[00:08:59.800 --> 00:09:04.480]   on the web in case you are interested for how for instance bounding volume
+[00:09:04.480 --> 00:09:08.080]   hierarchy algorithms so this is more like an access line bounding box
+[00:09:08.080 --> 00:09:17.680]   hierarchies on a bb that is implemented on the and on GPUs and how the
+[00:09:17.680 --> 00:09:24.000]   traversal of the data structure is being accelerated on the GPU typically the
+[00:09:24.000 --> 00:09:30.240]   as you can see here it is very simple you have this multi-level tree and the
+[00:09:30.240 --> 00:09:36.240]   traversal goes from top to down and as you intersect you get in closer and
+[00:09:36.240 --> 00:09:40.080]   closer to the actual intersection of finally intersect the triangle so it is
+[00:09:40.080 --> 00:09:47.480]   hierarchically embedded in this nested set of bounding boxes and there are also
+[00:09:47.480 --> 00:09:51.360]   special ways there there are a lot of tutorials I looked a little bit into it
+[00:09:51.360 --> 00:09:57.360]   on how to really build it with code examples in case you are interested it's
+[00:09:57.360 --> 00:10:03.560]   quite instructive but our lecture is not so much on real-time performance and
+[00:10:03.560 --> 00:10:09.200]   and or computer graphics hardware such we don't touch upon those maybe it's a
+[00:10:09.200 --> 00:10:15.320]   good one to build into the slide deck for next year but anyways just want to say
+[00:10:15.320 --> 00:10:20.000]   that it's supported and this is actually what makes ray tracing faster than in
+[00:10:20.000 --> 00:10:26.240]   the end it's the intersection tests good so far so good this is all about
+[00:10:26.240 --> 00:10:31.560]   ray tracing and when we later in this lecture in global illumination we will
+[00:10:31.560 --> 00:10:38.680]   look into what's called path tracing where we trace light from the eye back to
+[00:10:38.680 --> 00:10:43.800]   the source and we do this in a Monte Carlo type fashion to basically solve or
+[00:10:43.800 --> 00:10:47.680]   approximate solutions of global illumination problems but at the heart
+[00:10:47.680 --> 00:10:53.080]   of all these traces there's always a ray tracing algorithm so there is this
+[00:10:53.080 --> 00:10:58.280]   fundamental atomic building block of having a ray in space not necessary
+[00:10:58.280 --> 00:11:03.400]   from the eye it could be a secondary ray whatever and you need to intersect it
+[00:11:03.400 --> 00:11:10.000]   with a scene so that's coming so that's reoccurring over and over and over again
+[00:11:10.000 --> 00:11:16.280]   as such it's really good to understand you know this atomic operation and how
+[00:11:16.280 --> 00:11:21.800]   complex it actually is in a complex scene and and how many tricks there exist
+[00:11:21.800 --> 00:11:26.920]   to accelerate it by the way in terms of acceleration this is more like the
+[00:11:26.920 --> 00:11:32.120]   academic way of accelerating it using data structures and so forth but I tell
+[00:11:32.120 --> 00:11:37.760]   you they are countless of tricks in ray tracing to increase the performance
+[00:11:37.760 --> 00:11:42.840]   including this special instruction set of CPUs especially if we run it there's a
+[00:11:42.840 --> 00:11:46.200]   big difference of course if you run ray tracing on GPU which is much more
+[00:11:46.200 --> 00:11:53.600]   involved and running it on a CPU but even on CPUs there are so many tinkerings to
+[00:11:53.600 --> 00:12:00.240]   increase the performance all sorts of cachings and so forth and so on the web
+[00:12:00.240 --> 00:12:05.200]   is full of those resources in case somebody is is really interested in
+[00:12:05.200 --> 00:12:15.240]   performance of those so that was the old chapter now we move on to the next one
+[00:12:15.240 --> 00:12:26.080]   and I just have to find it so this is a lecture on which is also fairly
+[00:12:26.080 --> 00:12:33.960]   fundamental it is on light and matter and it is a little bit like a almost like
+[00:12:33.960 --> 00:12:39.920]   a physics or optics lecture and for most of you it should be a reminder you know
+[00:12:39.920 --> 00:12:46.800]   from a little bit of high school or basic physics and under credit physics it is
+[00:12:46.800 --> 00:12:50.400]   also very fundamental for those of you who attended the visual computing class
+[00:12:50.400 --> 00:12:57.480]   it should also be a little bit of a repetition in a sense but it is really
+[00:12:57.480 --> 00:13:03.720]   fundamental to understand what follows because we will work almost exclusively
+[00:13:03.720 --> 00:13:10.400]   with four or five different quantities like radiance irradiance luminous
+[00:13:10.400 --> 00:13:18.320]   intensity luminous flux and so forth and so on and in some often times you know
+[00:13:18.320 --> 00:13:23.920]   when you talk to people they use them interchangeably but they are different
+[00:13:23.920 --> 00:13:29.280]   each and every of these quantities have a precise definition and you can
+[00:13:29.280 --> 00:13:34.360]   transform them into each other and a lot of the mathematical derivations in what
+[00:13:34.360 --> 00:13:39.840]   follows are based on those transformations including solid angles and
+[00:13:39.840 --> 00:13:44.480]   differential surface areas and and so forth and so on and it can be quite
+[00:13:44.480 --> 00:13:48.960]   confusing so it's really good especially from second half of this lecture to
+[00:13:48.960 --> 00:13:54.560]   internalize these definitions because they help you a lot to understand what
+[00:13:54.560 --> 00:14:02.240]   follows this is also again the general roadmap a little bit where we are so we
+[00:14:02.240 --> 00:14:08.280]   are moving forward light and materials and the next one goes into reflection and
+[00:14:08.280 --> 00:14:15.880]   surface property modeling so today we want to learn a little bit what is light
+[00:14:15.880 --> 00:14:20.520]   and how it is created you should probably all remember a set how we quantify
+[00:14:20.520 --> 00:14:28.000]   light and a little bit around all of those these quantities just for the
+[00:14:28.000 --> 00:14:35.680]   history channel the notion of light has been a topic ever since humans start to
+[00:14:35.680 --> 00:14:40.880]   think philosophically so it goes back to the old philosophers who thought what
+[00:14:40.880 --> 00:14:48.520]   light where light comes from right was mostly philosophical and you know also
+[00:14:48.520 --> 00:14:53.560]   famous philosophers like you lead had their own theories and then of course in
+[00:14:53.560 --> 00:15:01.640]   the 1600s when after Renaissance when modern science literally started then
+[00:15:01.640 --> 00:15:06.480]   people started to think about light more systematically and there was Snell
+[00:15:06.480 --> 00:15:12.520]   famous names Fermat physicists or back in the day they were everything a little
+[00:15:12.520 --> 00:15:16.520]   bit right there was not a clear distinction between the disciplines if
+[00:15:16.520 --> 00:15:22.560]   you will and then we had Kim Aldi who came up with the notion of diffraction
+[00:15:22.560 --> 00:15:29.240]   Newton of course very important as you know he sort of studied the notion of
+[00:15:29.240 --> 00:15:35.440]   dispersion so if light is divided up into its spectral components through
+[00:15:35.440 --> 00:15:41.240]   refraction and then polarization Huygens the wave nature of light the dualism of
+[00:15:41.240 --> 00:15:47.600]   light the particle slash wave nature and all the way down to Maxwell who's not
+[00:15:47.600 --> 00:15:53.600]   here on these slides strangely who then finally did the most rigorous
+[00:15:53.600 --> 00:16:00.600]   mathematical description of light as part of the electromagnetic spectrum so
+[00:16:00.600 --> 00:16:05.880]   there were basically there was always a race for comprehensive theory
+[00:16:05.880 --> 00:16:12.760]   historically and Huygens was the one who came up with this idea of that light is
+[00:16:12.760 --> 00:16:17.560]   a wave because with waves with a wave theory you can and through the notion of
+[00:16:17.560 --> 00:16:23.080]   interference the superposition of waves of the front phase and the extension of
+[00:16:23.080 --> 00:16:29.400]   entire phase waves so forth you could explain a lot of the effects like
+[00:16:29.400 --> 00:16:34.320]   diffraction interference as I said polarization so they are all related to
+[00:16:34.320 --> 00:16:37.760]   the wave nature of light with a pure particle nature of light they are
+[00:16:37.760 --> 00:16:43.040]   difficult to explain and the fundamental principle of Huygens as you know as we
+[00:16:43.040 --> 00:16:47.960]   did in physics in high school if you want to create the new wave front then
+[00:16:47.960 --> 00:16:53.760]   each point on the new free front is sort of the emerge you know it serves as the
+[00:16:53.760 --> 00:17:00.240]   center for a new circular wave if you will and then the wave front is the
+[00:17:00.240 --> 00:17:05.440]   superposition of all these elementary waves so that's how basically light would
+[00:17:05.440 --> 00:17:17.200]   propagate and then Newton as well had you know it goes actually all the way down
+[00:17:17.200 --> 00:17:22.640]   to Einstein who got his Nobel Prize as we said last time for the photoelectric
+[00:17:22.640 --> 00:17:29.760]   effect and in modern quantum physics you have this dualism of light as part of
+[00:17:29.760 --> 00:17:33.800]   it literally that light is both a particle and waves much like an electron
+[00:17:33.800 --> 00:17:38.520]   but which is both wave it has wave nature but it has also particle nature and
+[00:17:38.520 --> 00:17:44.480]   then can explain all these things just run over it this is actually a very
+[00:17:44.480 --> 00:17:54.040]   interesting video it's used using concept of femto photography which can
+[00:17:54.040 --> 00:18:00.520]   basically go take the exposure down to picoseconds and what you see here is the
+[00:18:00.520 --> 00:18:09.000]   propagation of a life pulse light pulse through medium through this coke bottle
+[00:18:09.000 --> 00:18:15.640]   so you see it's so I mean it's super super super super super slow motion it
+[00:18:15.640 --> 00:18:19.960]   was actually I remember when they showed it at Sikrath was fairly impressive
+[00:18:19.960 --> 00:18:26.160]   once again this is like pulse and now you see how it moves through the medium
+[00:18:26.160 --> 00:18:34.920]   this is actually slow so to speak light slow down to becoming visible in terms
+[00:18:34.920 --> 00:18:41.000]   of the speed of light there is a very famous science fiction novel you can
+[00:18:41.000 --> 00:18:45.560]   look it up it's on the web available it's nicely for an hour or some it's
+[00:18:45.560 --> 00:18:51.440]   called the light of other days it's an old one and it's about this and you can
+[00:18:51.440 --> 00:18:57.280]   it makes you think because the idea of this novel is that they invented slow
+[00:18:57.280 --> 00:19:03.600]   class using special nanomaterials which means an optically dense medium that
+[00:19:03.600 --> 00:19:09.920]   slows down the speed of light so much that it takes years for light to travel
+[00:19:09.920 --> 00:19:18.360]   from one side to the other which means eventually you put it into a room or
+[00:19:18.360 --> 00:19:26.560]   wherever and it sort of soaks in all the light for a month for years and then you
+[00:19:26.560 --> 00:19:32.000]   can put it into your living room and you can watch this light going down so that
+[00:19:32.000 --> 00:19:36.960]   was a product and then the story unfolds around it but it's really interesting
+[00:19:36.960 --> 00:19:41.880]   and makes you think read it it's very nice once again so this is a little bit
+[00:19:41.880 --> 00:19:48.840]   like the idea of slow class in a way but just that this is done using a very
+[00:19:48.840 --> 00:19:55.360]   special way of recording these images that is so fast that you can slow down
+[00:19:55.360 --> 00:20:00.800]   speed of light in this video remarkable I also didn't know before I saw this
+[00:20:00.800 --> 00:20:06.920]   video that this is possible at all right it's recorded yeah yeah
+[00:20:06.920 --> 00:20:10.920]   so this single photography I mean you can if you really interest it you should
+[00:20:10.920 --> 00:20:17.000]   or attend a seminar should read the paper it's from Sikra of 2013 so it's a
+[00:20:17.000 --> 00:20:22.200]   special way of photography that is such a short scrolls phantom photography which
+[00:20:22.200 --> 00:20:27.920]   has such a short exposure that you can basically track it and in rapid fire and
+[00:20:27.920 --> 00:20:31.880]   then slow it down and you have an extreme slow motion where it's slow more
+[00:20:31.880 --> 00:20:40.480]   version of it good so that was a good one now in light emission we distinguish
+[00:20:40.480 --> 00:20:47.080]   between incandescence which is the so-called black body radiation and
+[00:20:47.080 --> 00:20:51.560]   you probably all heard about black body radiation we repeated quickly and the
+[00:20:51.560 --> 00:20:56.800]   luminescence and luminescence is that matter a medium typically on the
+[00:20:56.800 --> 00:21:03.680]   atomic level or molecular level or whatever emits light self-emission and
+[00:21:03.680 --> 00:21:10.560]   we all know a lot of that and sort of typically we distinguish between atomic
+[00:21:10.560 --> 00:21:15.920]   level of emission you know if the electrons in the hull of the atom are
+[00:21:15.920 --> 00:21:21.000]   excited they go on two different energy bands and then fall back and the
+[00:21:21.000 --> 00:21:27.000]   difference in energy is sort of emitted as an electromagnetic wave then there's
+[00:21:27.000 --> 00:21:32.200]   molecular emission which is a little bit similar but it's more complex because
+[00:21:32.200 --> 00:21:36.320]   multiple atoms are involved and then there is stimulated emission I will
+[00:21:36.320 --> 00:21:40.840]   explain them all a little bit for your to refresh your memory and there's
+[00:21:40.840 --> 00:21:45.680]   fluorescence and phosphorescence which is also used a little bit
+[00:21:45.680 --> 00:21:50.600]   interchangeably and finally bioluminescence which we all know from
+[00:21:50.600 --> 00:21:55.520]   avatar as well but there is a lot of bioluminescence literally in nature much
+[00:21:55.520 --> 00:22:04.520]   more than we would think it's remarkable if you ask biologists so very nice well
+[00:22:04.520 --> 00:22:11.640]   the historically the classical way of how we produce visible light is from heat
+[00:22:11.640 --> 00:22:16.800]   so for instance the classical bulb here which is not permitted in the European
+[00:22:16.800 --> 00:22:26.560]   Union anymore has this has a metal you know that is heated and as the heat you
+[00:22:26.560 --> 00:22:33.160]   know the temperature exceeds a certain level it starts emitting light and the
+[00:22:33.160 --> 00:22:38.880]   color of this light is a function of the temperature so this is a classical
+[00:22:38.880 --> 00:22:45.040]   example for black body emission and here we come to the black body and the
+[00:22:45.040 --> 00:22:48.880]   black body is in it's of course a theoretical concept or hypothetical body
+[00:22:48.880 --> 00:22:54.960]   that completely absorbs all wavelengths of thermal radiation incident on it so
+[00:22:54.960 --> 00:23:01.480]   if you expose it to energy it absorbs it all since it absorbs it it will heat
+[00:23:01.480 --> 00:23:09.160]   itself up and then at a certain point releases the energy in terms of
+[00:23:09.160 --> 00:23:15.640]   photo homes light you know and since it absorbs you know everything it's black
+[00:23:15.640 --> 00:23:21.280]   it doesn't reflect anything and a very good example of a black body is the
+[00:23:21.280 --> 00:23:27.680]   surface of the Sun and you know we with the with a black body we typically
+[00:23:27.680 --> 00:23:32.320]   associate a temperature you know because heated up as we heated up at a
+[00:23:32.320 --> 00:23:39.040]   certain temperature it emits a light of a certain color so basically a more
+[00:23:39.040 --> 00:23:46.200]   over the black body emits a continuous spectrum of electromagnetic waves and
+[00:23:46.200 --> 00:23:51.720]   the peak of spectrum of course shifts with the temperature and and it goes
+[00:23:51.720 --> 00:23:56.520]   part of it is in the infrared part of the ultraviolet and the part is in the
+[00:23:56.520 --> 00:24:01.520]   visible spectrum and this is why we see it another good example of black body is
+[00:24:01.520 --> 00:24:08.640]   a pretty much a lot of metals iron is a very good example as we know if you heat
+[00:24:08.640 --> 00:24:15.520]   up iron at a certain point it starts glowing in deep red orange then yellow
+[00:24:15.520 --> 00:24:19.480]   maybe if you continue to heat it's getting white and then finally blue and
+[00:24:19.480 --> 00:24:24.920]   as you know the stars because all stars are black bodies including our Sun
+[00:24:24.920 --> 00:24:29.720]   they're typically characterized in different categories and this is simply
+[00:24:29.720 --> 00:24:35.360]   by surface temperature the Sun is sort of yellow white it's yellow actually it's
+[00:24:35.360 --> 00:24:42.600]   6,500 Kelvin's on the surface and if we would take a piece of iron and heat it
+[00:24:42.600 --> 00:24:47.960]   up to 6,500 Kelvin the spectral composition of the light it radiates
+[00:24:47.960 --> 00:24:53.040]   would be very similar to the Sun with little in homogeneities and so that's
+[00:24:53.040 --> 00:24:58.120]   all this black body and they are white troughs or blue troughs in this and you
+[00:24:58.120 --> 00:25:04.080]   know in the stars in the universe and they have much higher temperature please
+[00:25:04.080 --> 00:25:14.560]   yeah it's right because it's not a perfect the perfect back body doesn't exist
+[00:25:14.560 --> 00:25:19.920]   it's a good approximation it's true because iron much like other metals
+[00:25:19.920 --> 00:25:29.720]   Wolfram again Wolfram it's tungsten this is tungsten material I think the so
+[00:25:29.720 --> 00:25:34.400]   that same thing you know it appears matte but it's not black because a little
+[00:25:34.400 --> 00:25:39.200]   bit of light is always reflected we don't have a perfect black body you can
+[00:25:39.200 --> 00:25:45.360]   create so at MIT recently with nano materials they create a structure that
+[00:25:45.360 --> 00:25:50.160]   literally absorbs all incident light it's sort of the pitch black black black
+[00:25:50.160 --> 00:25:56.080]   structure and it has lots of nano tubes in it at different orientations so it
+[00:25:56.080 --> 00:26:01.600]   gets really very very close to the black body I don't know if it would stand at
+[00:26:01.600 --> 00:26:06.640]   temperatures if you heat it up it would probably melt away so it is also in that
+[00:26:06.640 --> 00:26:11.040]   respect it's also not a black perfect back body but metals are typically they
+[00:26:11.040 --> 00:26:16.480]   reflecting a little bit diffuse and and specularly but that as you expose it to
+[00:26:16.480 --> 00:26:21.840]   massive heat then of course they start behaving like a black body at high
+[00:26:21.840 --> 00:26:29.760]   temperatures so the black body is governed by Planck's law and punks law
+[00:26:29.760 --> 00:26:33.840]   you who knows Planck's law probably a lot of you right from physics a little
+[00:26:33.840 --> 00:26:38.960]   bit so this is a simple equation it looks a little complicated but it's a
+[00:26:38.960 --> 00:26:46.120]   function of lambda and a function of time slanta is a parameter and it's a
+[00:26:46.120 --> 00:26:54.280]   function of the temperature so basically if you put a certain temperature say
+[00:26:54.280 --> 00:27:01.480]   2000 Kelvin's in it then it gives you a function that describes the
+[00:27:01.480 --> 00:27:07.400]   distribution the spectral energy distribution of the black body give you
+[00:27:07.400 --> 00:27:12.120]   an example here it's best to see this is how the equation looks like for
+[00:27:12.120 --> 00:27:18.200]   different temperatures so for 2000 Kelvin's pretty flat right for 3000 it's
+[00:27:18.200 --> 00:27:24.000]   getting more and more pronounced around 500 so the visible spectrum at 5000
+[00:27:24.000 --> 00:27:32.000]   Kelvin's it has a peak in the visible spectrum and as you increase the
+[00:27:32.000 --> 00:27:36.320]   temperatures it would shift so you also can clearly hear you the peak is not as
+[00:27:36.320 --> 00:27:41.320]   much pronounced but it shifts literally from red so the appearance if you look at
+[00:27:41.320 --> 00:27:47.280]   it visually in terms of color perception it would be red yellow blue and then
+[00:27:47.280 --> 00:27:53.440]   shift towards you know the shorter wavelengths which makes sense because
+[00:27:53.440 --> 00:27:58.720]   shorter wavelength photons have higher energy and if you increase the
+[00:27:58.720 --> 00:28:04.960]   temperature you have to emit more energy to be in energy equilibrium so that's
+[00:28:04.960 --> 00:28:11.200]   the black body interestingly if we look at these these curves if we want to
+[00:28:11.200 --> 00:28:18.440]   approximate for instance the appearance of a black body with R, G and B we have an
+[00:28:18.440 --> 00:28:22.840]   idea does anybody remember how we would do this for those of you in attended
+[00:28:22.840 --> 00:28:30.880]   visual computing should actually know it so the way we do it is through the CIE
+[00:28:30.880 --> 00:28:38.840]   system remember so there was this X, Y and C curves these are the curves of
+[00:28:38.840 --> 00:28:43.320]   human spectral sensitivity of light if you will they are normalized and
+[00:28:43.320 --> 00:28:47.560]   standardized and you can basically compute the inner product of the spectral
+[00:28:47.560 --> 00:28:51.160]   energy distribution with those standardized curves they are standardized
+[00:28:51.160 --> 00:28:57.440]   by a world committee called the I think it's called the Commission international
+[00:28:57.440 --> 00:29:02.040]   at Leclerage or something it was in Paris in the 30s it's very old but it's
+[00:29:02.040 --> 00:29:07.000]   still the standard to compute light so you get these three quantities X, Y, C as
+[00:29:07.000 --> 00:29:11.720]   the result of the inner products of functions and then you have matrix
+[00:29:11.720 --> 00:29:18.040]   transformed and transformed from X, Y, C to RGB which requires to measure of
+[00:29:18.040 --> 00:29:24.960]   course you know the coordinates of your screen so this is how it works what's
+[00:29:24.960 --> 00:29:29.360]   also interesting in this curve is sort of at 6000 Kelvin if we look it's a
+[00:29:29.360 --> 00:29:33.760]   little bit in my opinion it's not quite correct here in terms of color should be
+[00:29:33.760 --> 00:29:38.840]   a little bit shifted perceptually because if you have a curve at 6,500
+[00:29:38.840 --> 00:29:44.560]   Kelvin's it's probably very similar to the 5,000 and it has its peak as
+[00:29:44.560 --> 00:29:52.720]   Freud's collection goes at 550 nanometers approximately that's the Sun and if we
+[00:29:52.720 --> 00:29:59.640]   remember the brightness sensitivity of the human visual system which is a
+[00:29:59.640 --> 00:30:05.000]   physiological function you can measure so we can basically measure how we
+[00:30:05.000 --> 00:30:11.600]   perceive brightness across the spectrum that has also a peak at the 550
+[00:30:11.600 --> 00:30:18.960]   nanometers and this is simply evolution evolution has matched our visual system
+[00:30:18.960 --> 00:30:23.360]   to the black body of the Sun because that's the natural light source throughout
+[00:30:23.360 --> 00:30:32.160]   the millennia right make sense so here are a couple of black body examples I
+[00:30:32.160 --> 00:30:39.080]   don't want to go through them but it is a set the stars are probably the best and
+[00:30:39.080 --> 00:30:45.800]   most well known because this exact label is being used to categorize stars and
+[00:30:45.800 --> 00:30:50.800]   of different surface temperature of course lava is a good black body and
+[00:30:50.800 --> 00:30:58.880]   very good example how it closed so basically from the from the appearance
+[00:30:58.880 --> 00:31:06.800]   of the color you can roughly conclude the temperature of the black body so then
+[00:31:06.800 --> 00:31:11.800]   we want to go into luminescence luminescence emission of light as
+[00:31:11.800 --> 00:31:18.280]   substance the reason by the way by this black body is important is also light
+[00:31:18.280 --> 00:31:25.320]   sources are characterized by temperature we call it the color temperature of the
+[00:31:25.320 --> 00:31:31.360]   light source you have probably all seen that even in your screen you have to
+[00:31:31.360 --> 00:31:35.280]   be clear on the Mac you have two or three different settings of color
+[00:31:35.280 --> 00:31:42.640]   temperature do you know what this is if you change it it looks more white but
+[00:31:42.640 --> 00:31:47.480]   also more pride or it looks a little bit more yellowish right if you'd go for a
+[00:31:47.480 --> 00:31:51.640]   lower color temperature so you have probably I forgot the exact numbers maybe
+[00:31:51.640 --> 00:31:57.200]   can look it up in that during the break it's about 4,000 and maybe 7,000
+[00:31:57.200 --> 00:32:02.280]   kevins and a higher one maybe with 9,000 I really forgot the numbers but what
+[00:32:02.280 --> 00:32:06.960]   did if you change these settings then you're a white and if you have a white
+[00:32:06.960 --> 00:32:13.080]   screen it appears different it's one is a little yellowish and it's whiteish and
+[00:32:13.080 --> 00:32:18.120]   then a little blueish the blueish has the advantage that you can it's easier to
+[00:32:18.120 --> 00:32:24.680]   read but it's also not as I mean it's a little bit stressful for your visual
+[00:32:24.680 --> 00:32:33.880]   system if you work longer hours so this is simply the appearance of white at a
+[00:32:33.880 --> 00:32:41.440]   certain temperature is actually the color of the black but the equivalent of
+[00:32:41.440 --> 00:32:47.280]   the black body so you work with this black body emission with the planks
+[00:32:47.280 --> 00:32:55.360]   distribution literally to characterize the white point of your RGB system the
+[00:32:55.360 --> 00:32:59.160]   white point has to be at a certain temperature and that's the equivalent
+[00:32:59.160 --> 00:33:05.040]   temperature of black body does that make sense try it out and you will see that
+[00:33:05.040 --> 00:33:09.400]   this is exactly what happens if you change the color temperature and a lot of
+[00:33:09.400 --> 00:33:13.480]   light sources are characterized by especially white light sources are
+[00:33:13.480 --> 00:33:19.560]   characterized by an equivalent color temperature once again this is why it's
+[00:33:19.560 --> 00:33:25.000]   important that we understand what this means conceptually luminescence atomic
+[00:33:25.000 --> 00:33:30.920]   emission for those who had a little bit of solid-state physics when I was young I
+[00:33:30.920 --> 00:33:37.120]   went through a lot of those lectures in electrical engineering as well because
+[00:33:37.120 --> 00:33:41.920]   they are form all the solid-state physics forms the basis for semiconductors
+[00:33:41.920 --> 00:33:47.840]   which form the basis for microprocessors and in the end for all of
+[00:33:47.840 --> 00:33:53.560]   computing so the atomic emission it's such that you can excite you know the
+[00:33:53.560 --> 00:33:57.520]   atom typically consists of three different particles it's protons
+[00:33:57.520 --> 00:34:04.160]   neutrons that make the core and then in the high you have electrons and the
+[00:34:04.160 --> 00:34:09.080]   number of electrons typically compensate for the number of protons so that the
+[00:34:09.080 --> 00:34:13.080]   overall thing is neutral and not electrically charged unless it's an
+[00:34:13.080 --> 00:34:18.720]   ion and ion has deficit also on electron and it's charged can be
+[00:34:18.720 --> 00:34:25.920]   positively or negatively charged whatever so the typically the electrons are
+[00:34:25.920 --> 00:34:31.800]   on bands so this also a little bit the wave nature of electrons but they you
+[00:34:31.800 --> 00:34:38.240]   can imagine that they are sort of surrounding the core in terms of a
+[00:34:38.240 --> 00:34:43.840]   wave and it can be on a different energy level on different energy levels so you
+[00:34:43.840 --> 00:34:50.240]   can bring electrons from one energy level to a higher energy level by exciting
+[00:34:50.240 --> 00:34:56.240]   them exciting means you have to inject energy into it to pump it up and then
+[00:34:56.240 --> 00:35:01.840]   after you know it's pumped up it would very quickly fall back to the lower
+[00:35:01.840 --> 00:35:06.520]   energy state and the difference since this is quantified so they're not
+[00:35:06.520 --> 00:35:12.880]   infinitely many of such energy states they are really quantized which means
+[00:35:12.880 --> 00:35:19.120]   that the difference from one energy band to the next is delta E has a fixed value
+[00:35:19.120 --> 00:35:25.760]   and this is why the light that is emitted the photon has a distinct energy
+[00:35:25.760 --> 00:35:30.680]   and as such the energy of the photon is defined by its wavelength so if you have
+[00:35:30.680 --> 00:35:38.240]   atomic emission you typically get very crisp spectral sort of characteristic
+[00:35:38.240 --> 00:35:44.960]   and we can show you a few here it's illustrated so it goes as basically
+[00:35:44.960 --> 00:35:49.200]   you have two different energy states you excite you inject some energy the
+[00:35:49.200 --> 00:35:54.360]   electron jumps from one band to the next it can also jump across multiple bands
+[00:35:54.360 --> 00:35:59.200]   and then it falls back and it can fall back on any of these bands literally but
+[00:35:59.200 --> 00:36:07.320]   not arbitrarily so there will always be light emitted at certain elements
+[00:36:07.320 --> 00:36:11.600]   of spectrum and this is why the spectra of atomic emission here is the
+[00:36:11.600 --> 00:36:19.800]   hydrogen which is the most simple atom we can think of has a few distinct you
+[00:36:19.800 --> 00:36:24.960]   know distinct stripes in the spectrum which means these are exactly the energy
+[00:36:24.960 --> 00:36:28.760]   differences the possible energy differences of these bands if that makes
+[00:36:28.760 --> 00:36:34.760]   sense so form are complex atom like iron you get more because it's there more
+[00:36:34.760 --> 00:36:40.400]   electrons there are more possible bands but it's always sort of it's not it's
+[00:36:40.400 --> 00:36:44.040]   not continuous in that sense it's always discontinuous because it's
+[00:36:44.040 --> 00:36:52.440]   discretized and quantized so here's also I mean there are also other ways of
+[00:36:52.440 --> 00:36:57.160]   for instance as the famous sodium vapor lights which you know from outside
+[00:36:57.160 --> 00:37:04.120]   street lighting and they work you know also with atomic emission molecular
+[00:37:04.120 --> 00:37:10.600]   emission is very similar to the atomic one but you have more internal
+[00:37:10.600 --> 00:37:14.880]   variation decrease of freedom you know and the orbital energies are not as
+[00:37:14.880 --> 00:37:20.120]   precise because you look at them at the molecule level the atoms are bound to
+[00:37:20.120 --> 00:37:25.040]   each other and it creates a different energy more complex energy distribution
+[00:37:25.040 --> 00:37:32.640]   very famous examples for molecular emission are the aurora borealis you
+[00:37:32.640 --> 00:37:38.280]   know sort of northern lights and this is excited by nitrogen and nitrogen
+[00:37:38.280 --> 00:37:46.160]   irons and and oxygen and also the blue of a candle flame this is mostly carbon
+[00:37:46.160 --> 00:37:53.240]   or carbon kind of you know sort of molecules related to carbon with carbon
+[00:37:53.240 --> 00:37:59.680]   in it so aurora borealis who has seen it live anybody oh nice this is I have
+[00:37:59.680 --> 00:38:03.040]   never seen it live my life so chef this is some one of the things I have to do
+[00:38:03.040 --> 00:38:08.720]   before I die anyways we should all do it must be spectacular I know a couple of
+[00:38:08.720 --> 00:38:14.600]   people who have done it here's a little video that shows it from orbit and you
+[00:38:14.600 --> 00:38:21.560]   can see how spectacular it is and it's excited by incident radiation from you
+[00:38:21.560 --> 00:38:28.280]   know sort of basically from T-pass based short wavelength and they excite the
+[00:38:28.280 --> 00:38:32.680]   molecules and then the molecules fall back and they start emitting energy in
+[00:38:32.680 --> 00:38:39.640]   the visible spectrum this is in physics oftentimes a process that you sort of
+[00:38:39.640 --> 00:38:47.520]   excite an atomic or molecular structure with short wavelength high energy
+[00:38:47.520 --> 00:38:54.600]   radiation and then it emits energy of different you know different part of
+[00:38:54.600 --> 00:38:59.760]   spectrum typically lower energy radiation which means it gets back into the
+[00:38:59.760 --> 00:39:04.400]   visible light for instance if we get back to this in phosphorescence and
+[00:39:04.400 --> 00:39:14.000]   luminescence lasers are also one way it's called stimulated emission and as
+[00:39:14.000 --> 00:39:18.840]   you all know for those of you have looked a little bit into lasers so the
+[00:39:18.840 --> 00:39:26.800]   characteristic of laser light is that it is in phase typically the light
+[00:39:26.800 --> 00:39:31.360]   emission processes we have seen they are random they are probabilistic by
+[00:39:31.360 --> 00:39:39.040]   nature and as such as you if you emit sort of a light quant photon which is a
+[00:39:39.040 --> 00:39:43.960]   quant has piece of energy the photon is also a wave which means it doesn't have
+[00:39:43.960 --> 00:39:49.720]   only an amplitude sort of the amount of energy in it it has sort of and it
+[00:39:49.720 --> 00:39:55.400]   oscillates and as such as the oscillation follows a phase pattern right it
+[00:39:55.400 --> 00:40:00.360]   somewhere starts at zero and then it goes up and down and all the if you look
+[00:40:00.360 --> 00:40:04.520]   at the number of those photons and we would compare their face they would all
+[00:40:04.520 --> 00:40:09.600]   be out of phase they have a random phase right they are not coherent the very
+[00:40:09.600 --> 00:40:15.440]   specifics of laser light and was also Nobel Prize is that all the photons that
+[00:40:15.440 --> 00:40:21.720]   are emitted are coherent they have they are face locked in in lockstep literally
+[00:40:21.720 --> 00:40:26.760]   they have all the same face and this makes the light so powerful because if you
+[00:40:26.760 --> 00:40:32.680]   think a very simplistic intuitive way if this is a sine wave then all the
+[00:40:32.680 --> 00:40:39.360]   photons have the maximum at the same time this is all like if you dance on the
+[00:40:39.360 --> 00:40:45.960]   dance floor and everybody all of us goes in lockstep the you know the floor
+[00:40:45.960 --> 00:40:51.680]   starts oscillating right because you sort of excited at all at the same time
+[00:40:51.680 --> 00:40:55.000]   and this is the same with laser light so if you have coherent light you have much
+[00:40:55.000 --> 00:41:01.400]   more energy exposure to it and it's also super easy it doesn't disperse as
+[00:41:01.400 --> 00:41:07.280]   quickly if you can it stays bundled so lasers are super important as you know
+[00:41:07.280 --> 00:41:12.840]   in all sorts of applications all across but at the heart of it it's literally
+[00:41:12.840 --> 00:41:20.280]   that you inject light into an atomic structure you excite and then the light
+[00:41:20.280 --> 00:41:25.080]   leaves as well no it's not animated here it's just a simple pattern the idea is
+[00:41:25.080 --> 00:41:30.720]   you inject light into it and then the light passes but it also part of the
+[00:41:30.720 --> 00:41:36.400]   energy excites others and then there is more light emitted and that's all in
+[00:41:36.400 --> 00:41:44.040]   face locked so that's the idea and you can typically the first lasers I don't
+[00:41:44.040 --> 00:41:51.080]   know if anybody remembers they were created as far as my recollection goes
+[00:41:51.080 --> 00:41:56.760]   through Ruby as a material and you had half-silvered mirrors which means you
+[00:41:56.760 --> 00:42:03.120]   eject you know a flash to the cleat through xenon lamp a flash of visible
+[00:42:03.120 --> 00:42:09.520]   light and then the light would bounce back and forth in within this half
+[00:42:09.520 --> 00:42:12.640]   silvered structure you know be inject the light and then since there were
+[00:42:12.640 --> 00:42:17.000]   mirrors on both sides it would always bounce very quickly and as it bounces
+[00:42:17.000 --> 00:42:22.440]   of course it hits the atom atomic structures inside so it starts exciting
+[00:42:22.440 --> 00:42:28.800]   the electrons but the electrons emit all face locked light so over time now I
+[00:42:28.800 --> 00:42:35.360]   mean this is like super short time but it would start building up critical number
+[00:42:35.360 --> 00:42:43.560]   of photons literally that are all in face and then sort of it would release laser
+[00:42:43.560 --> 00:42:49.640]   beam this is the most the first and most simple way of creating lasers right now
+[00:42:49.640 --> 00:42:55.680]   it's a lot solid state laser diets are based on semiconductors and so forth
+[00:42:55.680 --> 00:42:59.240]   what has happened also with the spectrum it was not so easy in the early days to
+[00:42:59.240 --> 00:43:06.080]   create lasers of a particular you know a color or particular prime spectrum as you
+[00:43:06.080 --> 00:43:12.640]   can imagine the spectral energy distribution of a laser is a delta an
+[00:43:12.640 --> 00:43:17.680]   ideal laser would be a delta distribution it is a precise wavelength so
+[00:43:17.680 --> 00:43:24.600]   all the energy is just pushed into one wavelength so it's it's basically
+[00:43:24.600 --> 00:43:31.280]   infinite at this wavelength in energy density and so outside but of course an
+[00:43:31.280 --> 00:43:35.480]   ideal laser has a lot of there's noise there's atomic operations all sorts of
+[00:43:35.480 --> 00:43:40.640]   spurious artifacts which make it all a tiny little Gaussian distribution in the
+[00:43:40.640 --> 00:43:47.320]   spectrum but it's very sharp in a way and over the years and then a finish we
+[00:43:47.320 --> 00:43:52.760]   go into the break lasers of different wise even tunable lasers had been
+[00:43:52.760 --> 00:43:58.640]   invented and the big thing was of course the invention of or the creation of
+[00:43:58.640 --> 00:44:07.320]   three lasers that span sort of a decent part of the horseshoe diagram in RGB
+[00:44:07.320 --> 00:44:14.640]   because this was the fundamentals or this was the basis of modern cinematic
+[00:44:14.640 --> 00:44:19.160]   laser protectors if you go to theater and you have high-quality theater you
+[00:44:19.160 --> 00:44:23.720]   will always have exclusively laser laser projectors this was not the case 10 15
+[00:44:23.720 --> 00:44:27.200]   years ago I remember when I started at Disney because in Disneyland we have
+[00:44:27.200 --> 00:44:31.880]   lots of protection systems so there was always and huge ones I max and
+[00:44:31.880 --> 00:44:36.720]   everything it was always the idea to come up with laser protection but right
+[00:44:36.720 --> 00:44:41.480]   now it's there and of course laser projector has a much wider gamut because
+[00:44:41.480 --> 00:44:47.400]   the three primaries are really really close to the outer bound of the horseshoe
+[00:44:47.400 --> 00:44:53.960]   diagram and you can they create a lot of brightness and contrast and saturation so
+[00:44:53.960 --> 00:44:58.720]   it's it's great but they they are there they are not as old as I said maybe 10
+[00:44:58.720 --> 00:45:04.480]   years if at all anyways let's go into the break and let's just need that I
+[00:45:04.480 --> 00:45:15.080]   suggest that 1115 so give you a little time so why come back everybody I would
+[00:45:15.080 --> 00:45:20.920]   say that's not over we had there was some miscommunication my assistant they
+[00:45:20.920 --> 00:45:24.320]   sent me only one of the two decks for this lecture and I thought oh that's
+[00:45:24.320 --> 00:45:29.840]   nice light lecture today but as a matter of fact there was a second part missing
+[00:45:29.840 --> 00:45:35.320]   so such I have to speed up a little bit we might like behind we will try to make
+[00:45:35.320 --> 00:45:42.840]   make up for it don't worry quickly if you're a sense so this occurs when light
+[00:45:42.840 --> 00:45:49.320]   is striking a surface and then it is briefly absorbed and then re-emitted at
+[00:45:49.320 --> 00:45:55.320]   the lower frequency and there are lamps you know a lot of these lamps are
+[00:45:55.320 --> 00:46:01.120]   fluorescent lamps which is really you use electricity first of all to excite
+[00:46:01.120 --> 00:46:09.720]   certain atoms to emit light at a short wavelength at a violet light and then
+[00:46:09.720 --> 00:46:16.440]   there is a coating and inner coating on those tubes that absorbs this ultraviolet
+[00:46:16.440 --> 00:46:22.680]   light and emits it remits it in the visible spectrum and this is how the
+[00:46:22.680 --> 00:46:26.480]   typical neon lights or fluorescent lights so they're different bases neon
+[00:46:26.480 --> 00:46:32.400]   lights have neon as a basis and and others have others as a basis so they
+[00:46:32.400 --> 00:46:39.040]   produce visible light then there's also black light that's a subset of
+[00:46:39.040 --> 00:46:46.120]   fluorescent slams which you all know they use really used for visual effects in
+[00:46:46.120 --> 00:46:52.960]   the dark but they typically emit near field ultraviolet light at about 360
+[00:46:52.960 --> 00:46:59.280]   nanometers and they are built in the same fashion as conventional fluorescent
+[00:46:59.280 --> 00:47:02.760]   slams so you can basically if you would remove the coating then you would have
+[00:47:02.760 --> 00:47:09.060]   a UV lamp literally and you can use there certain minerals and certain
+[00:47:09.060 --> 00:47:14.280]   materials and colors that of course become fluorescent you have seen that
+[00:47:14.280 --> 00:47:20.760]   probably looks actually pretty cool it's all that same atomic effect there is
+[00:47:20.760 --> 00:47:25.240]   real physics underneath and then first for a sense this is the same except that
+[00:47:25.240 --> 00:47:31.080]   the material absorbs and then emits the energy over a longer period of time
+[00:47:31.080 --> 00:47:37.000]   which can be up to hours and it depends very much on the material here there
+[00:47:37.000 --> 00:47:42.640]   are certain examples how they go after one minute after four minutes we all
+[00:47:42.640 --> 00:47:48.240]   know this from our watches has been around it's really interesting there are
+[00:47:48.240 --> 00:47:55.000]   also sort of the mushrooms for instance that are phosphorescent they
+[00:47:55.000 --> 00:48:00.800]   literally glow in the dark so that's not bioluminescence because this one
+[00:48:00.800 --> 00:48:06.360]   this physical effect once again requires energy to be injected first
+[00:48:06.360 --> 00:48:12.960]   sunlight so you basically charge it if you will with sunlight and then the sort
+[00:48:12.960 --> 00:48:18.920]   of the material or the molecule whichever is responsible for it that
+[00:48:18.920 --> 00:48:24.440]   would emit this energy over a long period of time it's almost like a battery
+[00:48:24.440 --> 00:48:31.040]   for photons if you will and then there's bioluminescence this is really active
+[00:48:31.040 --> 00:48:38.200]   create that's a creation of light through a chemical reaction and it can be purely
+[00:48:38.200 --> 00:48:42.160]   chemical we know there are these cold lights that you use if you go out
+[00:48:42.160 --> 00:48:48.480]   camping to break and then there are chemicals that have a chemical reaction
+[00:48:48.480 --> 00:48:53.360]   and they emit light typically we call it cold light because there's no heat
+[00:48:53.360 --> 00:49:01.720]   literally involved and there are certain animals as we know insects fishes and
+[00:49:01.720 --> 00:49:11.840]   everything that do emit light very famous also algae or others like jellyfish for
+[00:49:11.840 --> 00:49:18.520]   instance pretty interesting or deep sea fish there so this is a very famous one
+[00:49:18.520 --> 00:49:25.880]   which has this little lamp literally in front of him once again mushrooms or
+[00:49:25.880 --> 00:49:32.760]   the bioluminescent mushrooms exist and all sorts of plants so there's much more
+[00:49:32.760 --> 00:49:38.200]   bioluminescence this is algae so some effects and some of beaches famous for
+[00:49:38.200 --> 00:49:42.280]   those effect this is long exposure effect as far as I'm aware it's probably
+[00:49:42.280 --> 00:49:51.000]   not as pronounced as it looks on the picture here anyways so that was a
+[00:49:51.000 --> 00:49:56.560]   little bit of a background in physics how light is being created now we want to
+[00:49:56.560 --> 00:50:02.720]   talk about quantifying light and the quantification of light is literally an
+[00:50:02.720 --> 00:50:09.360]   old science it's part of physics it's called radiometry and it's related to
+[00:50:09.360 --> 00:50:16.920]   literally it started with sort of the idea of quantifying the electromagnetic
+[00:50:16.920 --> 00:50:23.640]   spectrum so because these quantities relate to all of the electromagnetic
+[00:50:23.640 --> 00:50:28.720]   spectrum for the special purpose of visible light there's actually a
+[00:50:28.720 --> 00:50:33.120]   separate definition which sort of matches the electromagnetic spectrum the
+[00:50:33.120 --> 00:50:38.000]   energy distribution of the soil we start from the source how do you define an
+[00:50:38.000 --> 00:50:43.800]   electromagnetic source oh by the amount of energy that is emitted per unit time
+[00:50:43.800 --> 00:50:48.480]   so by its power but that's not enough because we know that there is a certain
+[00:50:48.480 --> 00:50:53.600]   if it's a black body it's related to a certain distribution of the spectrum so
+[00:50:53.600 --> 00:50:58.000]   how this power is emitted throughout the spectrum this is where it typically
+[00:50:58.000 --> 00:51:04.520]   starts that's often called the flux right and then the next step in the
+[00:51:04.520 --> 00:51:09.320]   difference between radiometry and we look at radiometry and technically
+[00:51:09.320 --> 00:51:16.880]   visible light is that you do an inner product of the spectral energy
+[00:51:16.880 --> 00:51:23.200]   distribution with the brightness sensitivity curve of human eye because
+[00:51:23.200 --> 00:51:27.320]   you said I want to have this quantity that is relevant for the visible spectrum
+[00:51:27.320 --> 00:51:33.720]   I can have an electromagnetic source for instance in infrared source it can be
+[00:51:33.720 --> 00:51:39.000]   infinitely powerful but I don't see anything so I want to measure what I
+[00:51:39.000 --> 00:51:44.440]   see and that's the difference so you will see both in the visual computing
+[00:51:44.440 --> 00:51:52.920]   lecture we look a little bit more into the ones for for what we called the in
+[00:51:52.920 --> 00:51:58.440]   sort of which in the light science I just missed the word in English in
+[00:51:58.440 --> 00:52:03.440]   set of radiometry but for now radiometry is totally fine it includes the visible
+[00:52:03.440 --> 00:52:07.760]   light and visible light once again is this narrow part of the spectrum from
+[00:52:07.760 --> 00:52:14.760]   380 literally here's 390 but it's actually 380 to 780 approximately
+[00:52:14.760 --> 00:52:18.680]   there are different definitions and probably there's also a little bit of
+[00:52:18.680 --> 00:52:24.160]   variation of our human visual system what we still perceive and not perceive
+[00:52:24.160 --> 00:52:29.600]   light consists of photons as we know they have a position and they have a
+[00:52:29.600 --> 00:52:33.640]   direction in which they travel very important and this is also the normal
+[00:52:33.640 --> 00:52:37.960]   contour for all of these quantities a lot of the quantities are positional
+[00:52:37.960 --> 00:52:43.240]   they're related to a position on the surface that's denoted by x x would be
+[00:52:43.240 --> 00:52:49.600]   any parametrization of the surface and could also be decomposed into an x y and
+[00:52:49.600 --> 00:52:56.080]   x u or in a u and a y coordinate whatever it is that you use direction is
+[00:52:56.080 --> 00:53:02.280]   also very important we always we denote it typically on those derivations and
+[00:53:02.280 --> 00:53:05.840]   throughout the lectures with an omega and the omega has a little arrow which
+[00:53:05.840 --> 00:53:12.040]   means it's a vector quantity and I think I explained last time we typically
+[00:53:12.040 --> 00:53:17.360]   direction can be defined over the sphere over the hemisphere and in order to
+[00:53:17.360 --> 00:53:22.240]   address a point on the sphere you need two angles an angular parametrization a
+[00:53:22.240 --> 00:53:28.720]   phi and theta say so which means this and that's this omega this omega typically
+[00:53:28.720 --> 00:53:35.080]   decomposes into two scalar values that give you a direction in space which is
+[00:53:35.080 --> 00:53:39.480]   parametrized over the sphere because oftentimes we say look we want to know
+[00:53:39.480 --> 00:53:47.760]   how much light arrives here that's x and how much of it goes into this
+[00:53:47.760 --> 00:53:53.520]   direction and in order to parametrize this direction put a hemisphere over this
+[00:53:53.520 --> 00:53:58.080]   x with x in your origin and then we have the two angles that give us the
+[00:53:58.080 --> 00:54:05.800]   direction and that's the omega okay and then there's wavelength and each photon
+[00:54:05.800 --> 00:54:09.880]   as you know has the energy that is dependent on the wavelength so the
+[00:54:09.880 --> 00:54:14.320]   shorter the wavelength the higher the energy of the photon and there's blanks
+[00:54:14.320 --> 00:54:18.880]   constant and the speed of light these are very fundamental equations in physics
+[00:54:18.880 --> 00:54:27.280]   and the unit of energy energy is joule typically and energy per time is power
+[00:54:27.280 --> 00:54:34.680]   now the question is how do we measure the energy flow well measuring this flow
+[00:54:34.680 --> 00:54:40.200]   means we ultimately have to count photons right and there are five basic
+[00:54:40.200 --> 00:54:47.640]   quantities to measure all of this one is the luminous flux and this is the total
+[00:54:47.640 --> 00:54:55.040]   amount of energy per unit time that is emitted by a light source right so total
+[00:54:55.040 --> 00:55:00.320]   amount of photons per time so that's flux then there is irradiance there is
+[00:55:00.320 --> 00:55:04.840]   radiosity there is intensity and radiance we explain them all now in a
+[00:55:04.840 --> 00:55:09.600]   moment these are the top five and if you can distinguish those five you're good
+[00:55:09.600 --> 00:55:15.440]   in subsequent lectures we will mostly talk about probably I would say
+[00:55:15.440 --> 00:55:23.240]   irradiance and radiance mostly about radiance so that's the central that's
+[00:55:23.240 --> 00:55:30.800]   the central quantity by which we measure energy transported along array and as I
+[00:55:30.800 --> 00:55:36.240]   said in the end it's once again all about tracing rays that represent the
+[00:55:36.240 --> 00:55:40.800]   transport of energy from a certain point to another point from a certain point
+[00:55:40.800 --> 00:55:45.800]   into a certain direction and this is all measured by what's called radiance so
+[00:55:45.800 --> 00:55:54.360]   radiance you'll hear a lot so let's see flux total amount of energy passing for
+[00:55:54.360 --> 00:56:00.160]   surface or space per unit time another way to look at flux if I want to
+[00:56:00.160 --> 00:56:04.480]   characterize the light source I would probably put a sphere around the light
+[00:56:04.480 --> 00:56:09.400]   source say for simplicity be point light source put a sphere around it and measure
+[00:56:09.400 --> 00:56:16.360]   the total amount of photons that penetrate this that basically are emitted
+[00:56:16.360 --> 00:56:23.080]   through that surface of this surrounding sphere per unit time in a more
+[00:56:23.080 --> 00:56:27.880]   general way you could also put a probe in space and said look if I want to measure
+[00:56:27.880 --> 00:56:33.080]   the flux that goes to the surface then I have to measure the total amount of
+[00:56:33.080 --> 00:56:39.720]   photons that pass through the surface at unit time and this is the quantity is
+[00:56:39.720 --> 00:56:53.160]   joule per second and this is watts another way to get the flux would be to say look
+[00:56:53.160 --> 00:57:04.880]   let's take if we have a source of a certain spectral energy distribution I
+[00:57:04.880 --> 00:57:10.920]   call it p of lambda this would give us p of lambda would be something like this
+[00:57:10.920 --> 00:57:21.720]   if this is lambda it'd be black body could be black body this distribution
+[00:57:21.720 --> 00:57:32.080]   then simply phi would amount to up to a constant maybe it's just the integral of
+[00:57:32.080 --> 00:57:40.120]   p of lambda the lambda and then we would integrate it through you know
+[00:57:40.120 --> 00:57:49.040]   throughout the spectrum you know from 0 to infinite does that make sense because
+[00:57:49.040 --> 00:57:53.320]   it's a power density distribution if we integrate the density of the spectrum
+[00:57:53.320 --> 00:57:59.640]   we get power which is energy per time so that's another way to look at flux now
+[00:57:59.640 --> 00:58:12.600]   the difference this is flux and then there's also which you have heard a lot
+[00:58:12.600 --> 00:58:18.520]   there is luminous flux and the luminous flux unlike this general radiant flux
+[00:58:18.520 --> 00:58:27.480]   is the flux that is sort of passed through the part of the visible spectrum
+[00:58:27.480 --> 00:58:32.080]   so this could go over a wide range of spectrum but only small part is relevant
+[00:58:32.080 --> 00:58:41.200]   for what we perceive and we know that in our human visual system where is the
+[00:58:41.200 --> 00:58:48.480]   color there it is so our human visual system has this distinct brightness
+[00:58:48.480 --> 00:58:56.520]   sensitivity curve which has a peak at 550 so the curve looks probably like this
+[00:58:56.520 --> 00:59:09.320]   where this is 550 and this is called oftentimes called the V of lambda the
+[00:59:09.320 --> 00:59:15.360]   visual sensitivity curve so in order to get a quantity that is sort of aligned
+[00:59:15.360 --> 00:59:21.360]   to what we see we would probably change this definition and say here we call it
+[00:59:21.360 --> 00:59:32.480]   Phi V and this is constant times this integral and it's not P of lambda only
+[00:59:32.480 --> 00:59:38.920]   but we do them we multiply we compute the inner product of this P of lambda
+[00:59:38.920 --> 00:59:50.720]   with this V of lambda which is the visual sensitivity lambda and then D lambda
+[00:59:50.720 --> 01:00:01.120]   does that make sense and that could actually go from say 380 to 780 so just
+[01:00:01.120 --> 01:00:03.960]   over the visible spectrum because that's what's relevant the rest is not
+[01:00:03.960 --> 01:00:07.840]   relevant for us and this is really the difference you can think of all these
+[01:00:07.840 --> 01:00:15.360]   quantities being defined with or without this V of lambda and we throughout the
+[01:00:15.360 --> 01:00:21.120]   lecture for simplicity use the standard radiometric one the ones from the
+[01:00:21.120 --> 01:00:25.200]   luminous signs literally would always include the other ones it's a little
+[01:00:25.200 --> 01:00:30.120]   bit confusing but keep in mind if you hear about luminous flux then
+[01:00:30.120 --> 01:00:37.560]   technically it would be this definition radiant flux would be this one
+[01:00:37.560 --> 01:00:57.160]   makes sense yeah so here's a trick very good question the system they started
+[01:00:57.160 --> 01:01:00.360]   in the olden days at the beginning of 20th century starting quantifying
+[01:01:00.360 --> 01:01:03.960]   developing all the system they started with a retiometric measures and then
+[01:01:03.960 --> 01:01:08.160]   somebody said they are about for to characterize light and light sources
+[01:01:08.160 --> 01:01:13.440]   often practical there is literally light they are light engineers right it's very
+[01:01:13.440 --> 01:01:18.840]   practical that you know we have to adjust the definition we have to combine
+[01:01:18.840 --> 01:01:23.760]   it with visual perception what we perceive so they started measuring this
+[01:01:23.760 --> 01:01:30.160]   V of lambda curve first brightness sensitivity later on we did the same
+[01:01:30.160 --> 01:01:37.040]   with color so started measuring the XYC and the XYC system was measured in such
+[01:01:37.040 --> 01:01:43.880]   a way that the decomposition of the three quantities is such that the Y curve Y if
+[01:01:43.880 --> 01:01:51.560]   you look at Y of lambda in the CIE system this is exactly we have lambda so
+[01:01:51.560 --> 01:01:59.240]   because that characterizes brightness if you will so this is why capital Y of
+[01:01:59.240 --> 01:02:08.960]   lime turret is well known from CIE a good question actually so back to after
+[01:02:08.960 --> 01:02:17.000]   this excursion back to the luminous flux this is how we measure it and so once
+[01:02:17.000 --> 01:02:22.240]   again a couple of examples for it we don't know the next one is iridians
+[01:02:22.240 --> 01:02:28.560]   that's an important one and this is the area density of flux so if you think
+[01:02:28.560 --> 01:02:33.200]   about measuring the flux by putting a probe certain surface area and measure
+[01:02:33.200 --> 01:02:38.960]   the number of photons that pass through it to unit time then if we normalize it
+[01:02:38.960 --> 01:02:45.200]   with respect to unit area if you said what is the differential flux that goes
+[01:02:45.200 --> 01:02:50.640]   what's the flux density right what's the differential flux that goes per
+[01:02:50.640 --> 01:02:58.040]   infinitismally small unit area arriving at the surface or passing through
+[01:02:58.040 --> 01:03:06.040]   that is iridians and iridians can also be seen as the total if I identify a
+[01:03:06.040 --> 01:03:13.640]   point so acts on a surface it's the total amount of flux that is arriving at
+[01:03:13.640 --> 01:03:19.360]   or the total amount of luminous energy integrated across the hemisphere arriving
+[01:03:19.360 --> 01:03:23.240]   at this point because it's a differential measure it changes from
+[01:03:23.240 --> 01:03:28.520]   surface point at this point it's different than at this so it allows you to
+[01:03:28.520 --> 01:03:33.800]   measure what's coming in and for us a lot of our considerations in the lecture
+[01:03:33.800 --> 01:03:39.400]   of what follows is all about hey how can we describe the transport of light like
+[01:03:39.400 --> 01:03:44.680]   that's coming in and how is it being reflected off so that's the that's sort
+[01:03:44.680 --> 01:03:49.720]   of the fundamental consideration that it's always per point per surface unit
+[01:03:49.720 --> 01:03:58.080]   area and that's the incoming part the iridians so you divide it by the size
+[01:03:58.080 --> 01:04:04.200]   of special literally and then there is another one which is important I talked
+[01:04:04.200 --> 01:04:08.320]   a little bit about radiosity and radiosity as you will see in a moment
+[01:04:08.320 --> 01:04:15.360]   it is an also an algorithm and a method to compute global light transport for
+[01:04:15.360 --> 01:04:21.000]   diffuse reflection and the radiosity I mean it's less popular it's really
+[01:04:21.000 --> 01:04:28.000]   popular in computer graphics that's the same thing but in terms of the radiant
+[01:04:28.000 --> 01:04:34.280]   accident so it's the total amount of flux that is being reflected off this
+[01:04:34.280 --> 01:04:40.040]   point in all possible directions it's not the directional reflection so we
+[01:04:40.040 --> 01:04:44.520]   don't distinguish the direction we just sum up over all possible directions the
+[01:04:44.520 --> 01:04:48.240]   flow that goes from the surface so typically if it's not a self-imitting
+[01:04:48.240 --> 01:04:53.760]   surface if light comes from all over the place and we look at this exact point in
+[01:04:53.760 --> 01:04:58.560]   order to get the radiosity we put a hemisphere over this point and measure
+[01:04:58.560 --> 01:05:03.080]   the total amount of photons that penetrates this hemisphere in all
+[01:05:03.080 --> 01:05:10.400]   possible directions so it's the same as iridians just directionally reversed
+[01:05:10.400 --> 01:05:28.120]   there was a question the way well actually this the number of photons is
+[01:05:28.120 --> 01:05:33.760]   actually it is a little bit of a stupid analogy because they're a little too
+[01:05:33.760 --> 01:05:36.920]   many there's a finite number of course you can concept it's more like to
+[01:05:36.920 --> 01:05:41.240]   conceptualize it it's absolutely true you if you really want to measure it
+[01:05:41.240 --> 01:05:45.640]   probably you have to add the spectrum here there's a spectral dependency of
+[01:05:45.640 --> 01:05:49.880]   all of this as soon as we talk about energy this is also by a nice definition
+[01:05:49.880 --> 01:05:54.320]   of the flux is basically the integral of a spectral power distribution there you
+[01:05:54.320 --> 01:05:59.480]   have it all so the looking at it on a photonic level is not it's a little bit
+[01:05:59.480 --> 01:06:04.120]   metaphorical because there are the technologies later on algorithms like
+[01:06:04.120 --> 01:06:10.920]   photon mapping and so forth and it's always easy to think of when we think
+[01:06:10.920 --> 01:06:15.440]   about the ray you know in terms of transporting energy from here to there
+[01:06:15.440 --> 01:06:23.000]   that photons are flowing along this ray that's absolutely right so this is
+[01:06:23.000 --> 01:06:28.680]   radiosity you will hear this term more often and then there is radiant
+[01:06:28.680 --> 01:06:36.080]   intense radiant intensity this is the directional intensity of flux where it's
+[01:06:36.080 --> 01:06:46.600]   the flux or power per solid angle area so and why is this important because a
+[01:06:46.600 --> 01:06:54.480]   practical light source typically has a certain distribution so if you look at
+[01:06:54.480 --> 01:07:01.200]   the light source simplified fashion as a point whereas a very small surface and
+[01:07:01.200 --> 01:07:05.760]   then there are typically some reflections some mirrors and stuff around
+[01:07:05.760 --> 01:07:10.160]   this to guide the light so if you think of a car light for instance how do you
+[01:07:10.160 --> 01:07:14.600]   design a car light there's a lot of engineering in it but typically it's
+[01:07:14.600 --> 01:07:19.800]   such that it should illuminate the street well but it should not lead to a lot
+[01:07:19.800 --> 01:07:25.120]   of glare right it should not illuminate pavement too much that if it has to
+[01:07:25.120 --> 01:07:29.720]   work so it has distinct characteristic maybe it has characteristic that is a
+[01:07:29.720 --> 01:07:34.880]   little bit like this one sort of this first lobe and the second lobe got knows
+[01:07:34.880 --> 01:07:40.800]   how it looks like but there is a clear directional distribution of the flux and
+[01:07:40.800 --> 01:07:46.360]   this is being characterized by radiant intensity and typically if you want to
+[01:07:46.360 --> 01:07:51.600]   for real light sources you always get a diagram that looks a little bit like
+[01:07:51.600 --> 01:07:58.000]   this is typically an angular diagram so we look at angular distribution right
+[01:07:58.000 --> 01:08:03.960]   directional this is one-dimensional a version of it but it goes in so sort of
+[01:08:03.960 --> 01:08:11.440]   it's parametrized as an angular thing in a in a spherical coordinate system and
+[01:08:11.440 --> 01:08:17.120]   so these these characteristics are important in practical light source and
+[01:08:17.120 --> 01:08:22.880]   practical light engineering so what would be the intensity distribution curve
+[01:08:22.880 --> 01:08:34.200]   of a point light source does anybody know how will it look like maybe in in
+[01:08:34.200 --> 01:08:39.960]   these two-dimensional charts well a point light source seems to emit light
+[01:08:39.960 --> 01:08:47.360]   isotropically or equally into all different directions if the point light
+[01:08:47.360 --> 01:08:56.000]   source is attached to the ceiling then the intensity distribution of the point
+[01:08:56.000 --> 01:09:01.240]   light source is a simple half circle is a uniform circle because it goes equally
+[01:09:01.240 --> 01:09:05.120]   in all different direction it doesn't have a preferred direction if you had
+[01:09:05.120 --> 01:09:09.000]   the spotlight source and for instance the open galia simple ways to define
+[01:09:09.000 --> 01:09:13.920]   spot light sources you can define the light source with a center direction and
+[01:09:13.920 --> 01:09:19.720]   then a falloff so it could also have such a characteristic right I don't know
+[01:09:19.720 --> 01:09:28.760]   maybe in this something like this right this would be a different distribution so
+[01:09:28.760 --> 01:09:32.760]   these are all ways to characterize light source but at the heart of it is what's
+[01:09:32.760 --> 01:09:38.960]   called a radiant intensity or radiant intensity distribution radiant intensity
+[01:09:38.960 --> 01:09:45.200]   once again is the differential flux that goes into it into a certain direction
+[01:09:45.200 --> 01:09:52.560]   and this certain direction the omega is represented by a differential solid
+[01:09:52.560 --> 01:09:57.400]   angle because we always look onto it in terms of spherical coordinate system
+[01:09:57.400 --> 01:10:04.680]   and this is infinitesimally small area on the sphere and here we go into solid
+[01:10:04.680 --> 01:10:11.800]   angle once again for those who don't have it present anymore so a simple angle
+[01:10:11.800 --> 01:10:20.680]   on a circle is basically 2 pi you know if we integrate 360 degrees and the
+[01:10:20.680 --> 01:10:27.440]   angle can be represented as a ratio between L the arc length and the radius
+[01:10:27.440 --> 01:10:32.480]   so that's on a two-dimensional case and there's an equivalent on the sphere in
+[01:10:32.480 --> 01:10:37.120]   three dimensions called a solid angle the solid angle the total angle on this
+[01:10:37.120 --> 01:10:42.560]   here would be 4 pi it's measured in steer radians so that's not really a
+[01:10:42.560 --> 01:10:47.760]   physical measure it's just to characterize that it's a solid angle but
+[01:10:47.760 --> 01:10:54.960]   it can also be described as the normalized surface area that is penetrated
+[01:10:54.960 --> 01:11:00.440]   you know through the structure that emanates from the origin and goes into
+[01:11:00.440 --> 01:11:05.680]   this direction so if it's infinitesimally small like this the omega it would be a
+[01:11:05.680 --> 01:11:13.160]   tiny tiny little disc that is you know sort of tiny little disc surface on
+[01:11:13.160 --> 01:11:20.480]   on this here and you know this solid angle is measured as as I said the
+[01:11:20.480 --> 01:11:28.280]   surface area that is enclosed with respect to our square and the maximum
+[01:11:28.280 --> 01:11:34.640]   the hole is the whole surface of the sphere and this is 4 pi in this measure
+[01:11:34.640 --> 01:11:41.480]   that's solid angle and here you see it once again as example should be simple
+[01:11:41.480 --> 01:11:47.920]   you've seen it now the differential area on the unit sphere around the
+[01:11:47.920 --> 01:11:51.040]   direction you know it can either be a little disc or it could be a little
+[01:11:51.040 --> 01:12:00.440]   square and the way we represent it is in the following so in this analogy that
+[01:12:00.440 --> 01:12:07.360]   it's basically a little tiny little square it would be dA and this can once
+[01:12:07.360 --> 01:12:13.840]   again in these spherical coordinates be represented at r d theta so there are
+[01:12:13.840 --> 01:12:19.480]   the two angles right to address each point on the sphere one is theta as you
+[01:12:19.480 --> 01:12:28.720]   can see here and the other one is phi and then we basically get d omega here in
+[01:12:28.720 --> 01:12:36.200]   the second line of these equations as the dA by r square and that equivalent to
+[01:12:36.200 --> 01:12:43.000]   sine theta d theta and d phi the reason why this is important these
+[01:12:43.000 --> 01:12:50.840]   transformations between surface and direction there is the in global
+[01:12:50.840 --> 01:12:54.440]   elimination when we look at the integral equations the fundamental rendering
+[01:12:54.440 --> 01:13:00.440]   equation they can be written in surface form and they can be written in
+[01:13:00.440 --> 01:13:06.840]   directional form we will derive it in directional form first because that's
+[01:13:06.840 --> 01:13:11.520]   the most intuitive way of understanding it we always talk about rays and
+[01:13:11.520 --> 01:13:18.080]   directions that's easy then but in for computational purposes if we want to
+[01:13:18.080 --> 01:13:24.560]   sample for instance the light source we typically sample on the surface compute
+[01:13:24.560 --> 01:13:29.400]   random points on the surface in order to do this we need to have a
+[01:13:29.400 --> 01:13:33.560]   representation in surface form so we have to transform between both and these
+[01:13:33.560 --> 01:13:38.200]   transformation are mostly transformations along these lines sort of
+[01:13:38.200 --> 01:13:43.440]   integrals so it's basically a variable transformation of an integral that's
+[01:13:43.440 --> 01:13:47.200]   happening and it goes from spherical coordinate to surface coordinates and
+[01:13:47.200 --> 01:13:56.680]   then back and forth so this is why it's interesting so once again the radiant
+[01:13:56.680 --> 01:14:03.160]   intensities the directional intensity of flux it is the d technically it's d phi
+[01:14:03.160 --> 01:14:09.680]   d omega so the first derivative of the flow with respect to the direction and
+[01:14:09.680 --> 01:14:16.800]   of course if you integrate it over the entire sphere as two or over the
+[01:14:16.800 --> 01:14:22.680]   entirety of the maximum possible solid angle you will get the flux back so
+[01:14:22.680 --> 01:14:26.440]   that's basically there's a differential relationship between the two as so many
+[01:14:26.440 --> 01:14:34.840]   and for an isotropic point source so it's just my question of course the flux
+[01:14:34.840 --> 01:14:41.200]   and the directional intensity they are simply related by a constant and the
+[01:14:41.200 --> 01:14:47.040]   constant is the full solid angle which simply says that the function if you
+[01:14:47.040 --> 01:14:52.680]   look at it as a function of direction is a constant right it radiates out energy
+[01:14:52.680 --> 01:15:00.920]   into all possible directions really equally so that's one and then the
+[01:15:00.920 --> 01:15:10.760]   radiance is the intensity per perpendicular unit area or it's the
+[01:15:10.760 --> 01:15:19.600]   flux density per unit solid angle and per perpendicular unit area so in a way
+[01:15:19.600 --> 01:15:25.720]   the intent flux and intensity are related to the emission to something that
+[01:15:25.720 --> 01:15:32.600]   is sent out say the to characterize light source but then in terms of the radiance
+[01:15:32.600 --> 01:15:41.320]   is more like related to what arise on the surface and you can imagine if you
+[01:15:41.320 --> 01:15:50.520]   want to sort of quantify how much light arrives on this little surface area then
+[01:15:50.520 --> 01:15:57.520]   this is probably related to the total flux but it's also related to the
+[01:15:57.520 --> 01:16:03.600]   direction from the light source with respect to the surface area so it is
+[01:16:03.600 --> 01:16:08.600]   sort of the intensity of the flux with respect to a certain direction which is
+[01:16:08.600 --> 01:16:14.080]   the intensity with respect to an infinitesimally small surface area so
+[01:16:14.080 --> 01:16:19.840]   it's a double differential with respect to the flux where the way to express it
+[01:16:19.840 --> 01:16:27.760]   is so this is that's sort of the analogy we typically call it L it is a function
+[01:16:27.760 --> 01:16:37.400]   of the spatial coordinate X we look at it here and then also of the direction and
+[01:16:37.400 --> 01:16:42.080]   radiance and irradiance so that they are antagonistic to each other you know
+[01:16:42.080 --> 01:16:46.920]   what arrives and then this is what what leaves the surface if you will so this is
+[01:16:46.920 --> 01:16:55.400]   di da and for it's very important that we are of course interested in the area
+[01:16:55.400 --> 01:17:02.600]   that is perpendicular to the direction so if the surface area if we want to
+[01:17:02.600 --> 01:17:08.200]   measure what's so how much light first of all arrives and then how much light
+[01:17:08.200 --> 01:17:14.840]   leaves so for the ones one would be the irradiance technically but radiance and
+[01:17:14.840 --> 01:17:22.240]   irradiance is antagonistic because what the irradiance of from a certain point
+[01:17:22.240 --> 01:17:28.360]   can be expressed as the radiance from some other point on the surface yeah as
+[01:17:28.360 --> 01:17:35.380]   you will see so what's leaving with respect to a certain direction and we
+[01:17:35.380 --> 01:17:40.920]   call this sort of for the moment the radiance would would really relate to
+[01:17:40.920 --> 01:17:49.640]   the perpendicular part of the surface area and as said this is basically the
+[01:17:49.640 --> 01:17:55.760]   differential flux with respect to the direction we are looking at and with
+[01:17:55.760 --> 01:18:03.560]   respect to the orthogonal surface area and if the direction doesn't coincide
+[01:18:03.560 --> 01:18:07.520]   with the surface so if the directional vector is not the normal vector to the
+[01:18:07.520 --> 01:18:14.560]   surface we have to add a cosine term to account for the orthogonal part for the
+[01:18:14.560 --> 01:18:19.720]   orthogonal projection of the surface so in other words L as a function of X and
+[01:18:19.720 --> 01:18:27.880]   omega is the flux related to certain surface and then with respect to a
+[01:18:27.880 --> 01:18:32.960]   direction with respect to an infinite to the smallest small surface area and
+[01:18:32.960 --> 01:18:38.040]   weighted by the cosine of the angle between the surface normal and the
+[01:18:38.040 --> 01:18:45.160]   directional vector if that makes sense and the it will illustrate why this is
+[01:18:45.160 --> 01:18:50.200]   the case it's simple once again Lambert's cosine law much like in diffuse
+[01:18:50.200 --> 01:18:57.480]   reflection so there is of course the density of penetration of light of an
+[01:18:57.480 --> 01:19:03.920]   orthogonal surface is higher and it falls off with a cosine of the angle
+[01:19:03.920 --> 01:19:11.520]   between the direction and and the surface itself so that's all should be
+[01:19:11.520 --> 01:19:17.400]   known so that's the cosine law and this is the radiance the radiance is the
+[01:19:17.400 --> 01:19:27.240]   fundamental quantity of for ray tracing once again intuitively look at a point
+[01:19:27.240 --> 01:19:34.600]   on the surface now we probably in order to characterize light transport they are
+[01:19:34.600 --> 01:19:39.240]   mostly two quantities that are relevant first of all we have to measure all the
+[01:19:39.240 --> 01:19:44.080]   light that arrives on this point and it comes from all possible different
+[01:19:44.080 --> 01:19:51.360]   directions which means we have to compute the total irradiance irradiance is
+[01:19:51.360 --> 01:19:56.320]   sort of that's more like from a receivers point of view right and the
+[01:19:56.320 --> 01:20:05.640]   irradiance can be computed as the integral over the hemisphere of all
+[01:20:05.640 --> 01:20:10.600]   incoming light from all different directions so that's the measure of
+[01:20:10.600 --> 01:20:18.160]   irradiance it comes in and then it's being reflected off the surface which
+[01:20:18.160 --> 01:20:24.960]   means it going into all possible directions out if it's highly specular
+[01:20:24.960 --> 01:20:30.000]   then it has a preferred direction if it's very diffuse it sort of goes out
+[01:20:30.000 --> 01:20:36.520]   into all possible directions and in order to characterize how much light is
+[01:20:36.520 --> 01:20:44.400]   being reflected off the surface into a specific direction we take radiance as
+[01:20:44.400 --> 01:20:50.240]   the measure and the surface could be just purely reflective and it can be
+[01:20:50.240 --> 01:20:55.160]   self-emitting if it's self-emitting then we have as a characteristic we have the
+[01:20:55.160 --> 01:21:02.720]   flux which means then the radiance would essentially be the flux per unit
+[01:21:02.720 --> 01:21:09.040]   surface area of a good surface area and per directional infinitive emitting
+[01:21:09.040 --> 01:21:16.960]   small solid angle directional area so that would be radiance and in the case
+[01:21:16.960 --> 01:21:23.240]   of non self-reflecting so it's not non self-emitting surface purely
+[01:21:23.240 --> 01:21:29.640]   reflecting then the radiance would be computed as the sum of the incident
+[01:21:29.640 --> 01:21:34.040]   radiances that come from all other points the irradiance is computed as
+[01:21:34.040 --> 01:21:37.520]   the integral over the entire hemisphere the question is what do you
+[01:21:37.520 --> 01:21:41.920]   indicate yeah you indicate what's coming from this direction but from another
+[01:21:41.920 --> 01:21:48.320]   point that's the radiance the one that's suited out into that direction so the
+[01:21:48.320 --> 01:21:57.080]   radiance that is emitted becomes the irradiance of some other it becomes a
+[01:21:57.080 --> 01:22:07.240]   part of the irradiance differential irradiance onto another point and which
+[01:22:07.240 --> 01:22:12.720]   means that in order the fundamental operator to compute the transport of
+[01:22:12.720 --> 01:22:20.560]   light seems to be an integral over the incoming light somehow right so that's
+[01:22:20.560 --> 01:22:25.640]   that's fundamental so that there's an integral operator and as we will see in
+[01:22:25.640 --> 01:22:32.080]   those of you who attended visual computing it's just more it is because
+[01:22:32.080 --> 01:22:37.120]   the light a character there must be characteristic of the surface because not
+[01:22:37.120 --> 01:22:45.360]   all surfaces reflect all the light in the same way some look brown others look
+[01:22:45.360 --> 01:22:49.840]   yellow or green or blue so there's color but then there's also someone more
+[01:22:49.840 --> 01:22:54.640]   specular they transport light preferably into one direction and not into others
+[01:22:54.640 --> 01:23:01.440]   others are more diffuse so there is this other function that must characterize
+[01:23:01.440 --> 01:23:09.840]   the material which is called a brdf and as we remember maybe roughly the
+[01:23:09.840 --> 01:23:17.200]   outgoing light is being into a certain direction is computed as the inner
+[01:23:17.200 --> 01:23:23.700]   product of an integral product of the function that describes the incident
+[01:23:23.700 --> 01:23:30.560]   light the distribution of your radiance times the brdf that's it that's
+[01:23:30.560 --> 01:23:35.120]   fundamental I will see in the next that was second part of the lecture already
+[01:23:35.120 --> 01:23:41.760]   pretty much no it's not true it was a little bit of it so radiance is
+[01:23:41.760 --> 01:23:46.640]   fundamental just very quickly to finalize on radiance it remained constant
+[01:23:46.640 --> 01:23:52.960]   along the ray that's the assumption only in vacuum right and as I said the
+[01:23:52.960 --> 01:23:59.120]   incident radiance at one point can be expressed as the outgoing radiance at
+[01:23:59.120 --> 01:24:03.800]   another point so now I do the math of what I told you a little bit and this is
+[01:24:03.800 --> 01:24:09.680]   illustrated here sorry for that it was animated too quickly so this is the idea
+[01:24:09.680 --> 01:24:18.080]   that if you look at this point X and we are interested in the incident radiance
+[01:24:18.080 --> 01:24:22.960]   it's not the irradiance the irradiance would be the totality of it over all
+[01:24:22.960 --> 01:24:27.920]   directions but if we are interested in a specific direction we want to know how
+[01:24:27.920 --> 01:24:34.040]   much comes from here that's sort of we call this incident radiance and this li
+[01:24:34.040 --> 01:24:40.040]   incident radiance as a function of X and as a function of direction can be
+[01:24:40.040 --> 01:24:47.720]   expressed as the outgoing radiance L o of this other point y and it's also a
+[01:24:47.720 --> 01:24:51.200]   function of the direction but in order to illustrate that it's directionally
+[01:24:51.200 --> 01:24:57.480]   reversed we call this minus omega right so transports out that's outgoing right
+[01:24:57.480 --> 01:25:03.640]   different direction does that make sense now if you once again if you want to
+[01:25:03.640 --> 01:25:09.600]   compute the total of the irradiance at this point you have to integrate over
