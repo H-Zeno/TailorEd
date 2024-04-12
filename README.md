@@ -1,2 +1,2 @@
 # TailorEd
-Educational Companion for highschool students
+Place key in key.txt file
