@@ -13,7 +13,6 @@ from langchain.chains import create_retrieval_chain
 from langchain_ai21 import AI21SemanticTextSplitter
 
 
-
 load_dotenv()
 
 llm = ChatOpenAI(api_key = os.getenv("OPENAI_API_KEY"))
@@ -21,22 +20,24 @@ embeddings = OpenAIEmbeddings()
 
 db = FAISS.load_local("Vector_DB/lecture_crusades", embeddings, allow_dangerous_deserialization=True)
 
-chat_history = [HumanMessage(content="Do you know something about Syria?"), AIMessage(content="Yes!")]
+chat_history = [HumanMessage(content="Do you know something about Syria during the crusades?"), AIMessage(content="Yes!")]
+
+# evaluate
 
 # create the retrieval chain
-retriever = db.as_retriever(search_kwargs={"score_threshold": 0.5}) # also possible: best k
+retriever = db.as_retriever(search_kwargs={"score_threshold": 0.7}) # also possible: best k
 
 # Retrieve relevant documents (in the database) based on the conversation history
 retrieve_query_prompt = ChatPromptTemplate.from_messages([
     MessagesPlaceholder(variable_name="chat_history"),
     ("user", "{input}"),
-    ("user", "Given the above conversation, generate a search query to look up to get information relevant to the conversation.")
+    ("user", "Given the above conversation, generate a search query to look up to get information relevant to the last question of the student. It is important that you explain the question of the student clearly and concisely.")
 ])
 retrieve_context_chain = create_history_aware_retriever(llm, retriever, retrieve_query_prompt)
 
 # Answer the user's questions based on the context of the conversation
 prompt_answer_with_context = ChatPromptTemplate.from_messages([
-    ("system", "Answer the user's questions based on the below context:\n\n{context}"), 
+    ("system", "Answer the student's questions based on the transcript from his class lecture. It is important that you can only provide information that you know is true (scientifically) and is given in the transcript of the lecture. If the student answers a previous question and it is correct (scientifically + transcript), you give the student a compliment and return 'CORRECT'at the end of the message. When the student has a question, you do NOT directly give him the answer, but ask the student critical questions so they can come to the answer themselves. Always be clear, encouraging and precise in your answers and ask the student questions. This is the context: \n\n{context}"), 
     MessagesPlaceholder(variable_name="chat_history"),
     ("user", "{input}"),
 ])
@@ -47,7 +48,7 @@ retrieval_chain = create_retrieval_chain(retrieve_context_chain, document_chain)
 
 output = retrieval_chain.invoke({
     "chat_history": chat_history,
-    "input": "What happend in Syria during the Crusades? Could you provide me with a summary?"
+    "input": "Could you tell me about a special woman in Syria? What did she do?"
 })
 
 print(output)   
