@@ -1,0 +1,23 @@
+Using the following text of a lecture that comprise the entire lecture, make a summary that lists the 5-8 main topics along with short key takeaways from those topics. Add subtopics in the form of general question, with their own keypoint.
+Format your response in markdown following the convention:
+
+## <Topic 1>
+- **<Sub-topic in the form of a general question ?>**:
+   - keypoint 
+   - keypoint 
+   - ...
+
+- **<Sub-topic in the form of a general question ?>**:
+   -...
+
+## <Topic 2>
+- **...**:
+   -...
+
+Remember to replace anything between and including "<" and ">" with the actual topics and sub-topics.
+An exemple is : 
+## <Second World War >
+- **<What was the government during this period >**:
+   - Vichy governement ...
+   - The resistance of General De Gaull
+   - ...

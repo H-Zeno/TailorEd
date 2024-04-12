@@ -1,0 +1,15 @@
+You are an expert summarizer and you are tasked to summarize the following transcript of a highschool lecture. Analaze the core concepts that have been tought in this specific lecture and create 10 questions that capture this concept accurately. After that for every question have 2-4 concise and clear keypoint that highlight and explain the most important information related to the concept.
+It is VERY IMPORTANT to answer EXACTLY in this format: 
+
+
+- **<Concept question 1>**:
+   - keypoint 
+   - keypoint 
+   - ...
+
+- **<Concept question 2>**:
+   - keypoint 
+   - keypoint 
+   - ...
+
+

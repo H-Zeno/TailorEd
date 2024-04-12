@@ -1,0 +1,60 @@
+{
+    "Triple Integrals": {
+        "How are triple integrals used?": [
+            "To find volume in a solid region in space",
+            "Volume element represents small volume of each piece of solid"
+        ],
+        "How to set up triple integrals?": [
+            "Focus on region of integration more than the function itself",
+            "Determine top and bottom values of z for given x and y"
+        ],
+        "Why is understanding the setup important?": [
+            "Emphasizes understanding setup over finding volume",
+            "Different orders of integration"
+        ]
+    },
+    "Double Integrals in Calculus": {
+        "How to determine integral bounds?": [
+            "Choose values for inner integral variables first",
+            "Understand geometry of solid and shadow it casts in the xy plane"
+        ],
+        "What is the importance of geometry in setting up integrals?": [
+            "Helps find outer bounds for double integrals",
+            "Cylindrical coordinates may simplify calculations"
+        ]
+    },
+    "Cylindrical Coordinates": {
+        "How are cylindrical coordinates used in setting up integrals?": [
+            "r as distance from z-axis, theta as angle from x-axis",
+            "Equations define surfaces like cylinders centered on z-axis"
+        ],
+        "Why is following the theta convention important?": [
+            "Theta measured from front counterclockwise",
+            "Avoid mistakes in setting up integrals"
+        ]
+    },
+    "Symmetry in Integration": {
+        "How does symmetry simplify calculations?": [
+            "Choosing factor for symmetry",
+            "Selecting order of integration"
+        ],
+        "What can symmetry be used for in integration?": [
+            "Define vertical planes, find volume, mass, average value",
+            "Calculate center of mass, moment of inertia"
+        ]
+    },
+    "Center of Mass and Moment of Inertia": {
+        "What is the center of mass and how is it calculated?": [
+            "Point where mass is evenly distributed",
+            "Use symmetry to simplify calculations"
+        ],
+        "How is moment of inertia calculated in 3D?": [
+            "Distance squared to an axis multiplied by density",
+            "Related to rotating objects in xy plane"
+        ],
+        "How to find moment of inertia for different axes?": [
+            "Integrate over solid using triple integrals",
+            "Example problem involving solid cone and z axis"
+        ]
+    }
+}
