@@ -28,7 +28,7 @@ def main():
         if not ChatManager.state == ChatManager.STATES["START"] and not ChatManager.state == ChatManager.STATES["CHOOSE_TOPIC"]:
             user_input = input("You: ")
             if user_input.lower() == 'quit':
-                print("Thank you for practicing together! Let's continue were we left off next time.")
+                print("Thank you for practicing together! Let's continue where we left off next time.")
                 break
         # START
         if ChatManager.state == ChatManager.STATES["START"]:
