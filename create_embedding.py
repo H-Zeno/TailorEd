@@ -1,4 +1,5 @@
 import os
+import json
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -10,16 +11,19 @@ from langchain_ai21 import AI21SemanticTextSplitter
 
 load_dotenv()
 
+
+    
 # load models
 llm = ChatOpenAI(api_key = os.getenv("OPENAI_API_KEY"))
 embeddings = OpenAIEmbeddings()
 semantic_text_splitter = AI21SemanticTextSplitter()
 
-
-# load text content
-""" loader = TextLoader(".\Content\Oxford_English_Dictionary.txt", encoding="utf-8")
-documents = loader.load() """
-text_file = open("Content\lecture_crusades.txt", "r", encoding="utf-8")
+# load text content from .txt file
+with open('paths.json', 'r') as file:
+    config = json.load(file)
+file_path = config['file_path']
+name = os.path.basename(file_path)
+text_file = open(file_path, "r", encoding="utf-8")
 text = text_file.read()
 text_file.close()
 
@@ -36,7 +40,7 @@ for doc in docs:
     print(f"text: {doc.page_content}")
     print("====")
 
-vector_db.save_local("Vector_DB\lecture_crusades")
+vector_db.save_local(f"Vector_DB\{name}")
 
 
 

@@ -16,7 +16,6 @@ from langchain_ai21 import AI21SemanticTextSplitter
 from langchain.tools.retriever import create_retriever_tool
 from langchain_core.documents import Document
 
-import assistant
 
 
 load_dotenv()
@@ -25,7 +24,12 @@ llm = ChatOpenAI(model ="gpt-3.5-turbo", api_key = os.getenv("OPENAI_API_KEY"))
 embeddings = OpenAIEmbeddings()
 output_parser = StrOutputParser()
 
-db = FAISS.load_local("Vector_DB/lecture_crusades", embeddings, allow_dangerous_deserialization=True)
+# Lead the correct vector database
+with open('paths.json', 'r') as file:
+    config = json.load(file)
+file_path = config['file_path']
+file_name = os.path.basename(file_path)
+db = FAISS.load_local(f"Vector_DB/{file_name}", embeddings, allow_dangerous_deserialization=True)
 
 
 # Initialize chat history
@@ -38,15 +42,15 @@ welcome_prompt = ChatPromptTemplate.from_messages([
     ("system", "Custom message of the teacher (alwyas follow this, HIGHEST PRIORITY): {custom_message}"),
     ("system", "Now tell the student that you are ready to help them practice and understand the material. Summarize concisely the main concepts of the lecture and ask the student if they have any questions.")
 ])
-welcome_document_chain = create_stuff_documents_chain(llm, welcome_prompt) 
+welcome_document_chain = create_stuff_documents_chain(llm, welcome_prompt)
 
 # choose topic chain
 choose_topic_prompt = ChatPromptTemplate.from_messages([
     MessagesPlaceholder(variable_name="chat_history"),
     ("system", "Choose the next teaching concept (from the list of concepts that will be provided to you) that is most related to the recent conversations that you had with the student."),
     ("system", "List of teaching concepts: {context}"),
-    ("system", "Output EXACTLY this dictionary: []'EXACT NAME OF CHOSEN CONCEPT (COPY)', 'INDEX OF THE CONCEPT IN THE LIST OF CONCEPTS (0 is the first element)']"),
-    ("system", "example output: []'Conquest of Jerusalem and its Aftermath', '0']")
+    ("system", "Output EXACTLY this dictionary: {'concept': 'index of the concept in the list (0 is the first concept)'}"),
+    ("system", "example output: {'Conquest of Jerusalem and its Aftermath': 0}")
 ])
 choose_topic_document_chain = create_stuff_documents_chain(llm, choose_topic_prompt)
 

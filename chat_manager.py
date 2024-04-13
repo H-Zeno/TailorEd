@@ -1,9 +1,11 @@
 import os
 from dotenv import load_dotenv
 import langchain
+import json
 from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
-from assistant import *
+from assistant import welcome_document_chain, choose_topic_document_chain, retrieval_chain
+from langchain_core.documents import Document
 load_dotenv()
 
 
@@ -24,10 +26,6 @@ class ChatManager:
         self.relevant_data = None
         self.remaining_concepts = None
         
-    
-    # Concept and key points
-    main_concepts = {'concept': 'Conquest of Jerusalem and its Aftermath', 'key_points': ['Brutal treatment of the Jewish and Christian populations in Jerusalem by the Crusaders', 'Capture of Jerusalem and the establishment of Baldwin as king', 'Defeat of the Egyptians under Al-Afdal Shahanshah in battles at Ramla and Jaffa']}
-
         
     def welcome_message(self, main_concepts: str, custom_message = "") -> str:
         print("START WELCOME CONVERSATION WITH TailorED")
@@ -39,24 +37,27 @@ class ChatManager:
         
         return welcome_response
     
-    def choose_discussion_topic(self, chat_history: list, remaining_concepts: list):
+    def choose_discussion_topic(self, chat_history: list, remaining_concepts: str):
         print("CHOOSE DISCUSSION TOPIC")
+        print(remaining_concepts)
         # Choose the next discussion topic based on the recent conversational history
-        
-        topic_list = choose_topic_document_chain.invoke({
+        topic_response = choose_topic_document_chain.invoke({
             "chat_history": chat_history,
-            "context":  [Document(page_content=str(remaining_concepts), metadata={"source_type": "list of core concepts to cover"})]
+            "context":  [Document(page_content=str(remaining_concepts), metadata={"source_type": "main concepts"})]
             })
         
+        print("TOPIC RESPONSE:", topic_response)
         try: 
-            topic_response = topic_list[0]
+            topic_list = json.loads(topic_response)
+            topic = topic_list[0]
             topic_index = topic_list[1]
+            print("TOPIC INDEX:", topic_index)
             
         except Exception as e:
             print("Error: ", e)
             self.choose_discussion_topic(chat_history, remaining_concepts)
-
-        return topic_response, topic_index
+        print("TOPIC RESPONSE:", topic)
+        return topic, topic_index
         
     
     def discussion_messages(self, user_input: str, chat_history: list,  main_concept: str, relevant_data: str) -> str:
