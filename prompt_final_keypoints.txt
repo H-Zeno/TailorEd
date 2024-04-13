@@ -1,0 +1,44 @@
+You are an expert summarizer and you are tasked to summarize the following transcript of a highschool lecture. Analaze the core concepts that have been tought in this specific lecture and create 5-8 main topics that capture this concept accurately, along with short key takeaways from those topics. After that for every topic, have 2-5 subtopics with their own keypoint that highlight and explain the most important information related to the subtopics.
+It is VERY IMPORTANT to answer EXACTLY in this JSON format convention: 
+{
+  "<Topic 1>": {
+    "<Sub-topic in the form of a general question ?>": [
+      "<keypoint>",
+      "<keypoint>",
+      "..."
+    ],
+    "<Sub-topic in the form of a general question ?>": [
+      "<keypoint>",
+      "<keypoint>",
+      "..."
+    ]
+  },
+  "<Topic 2>": {
+    "<Sub-topic in the form of a general question ?>": [
+      "<keypoint>",
+      "<keypoint>",
+      "..."
+    ],
+    "...": [
+      "..."
+    ]
+  },
+}
+
+Remember to replace anything between and including "<" and ">" with the actual topics and sub-topics.
+An exemple is : 
+{
+  "Second World War": {
+    "What was the government during this period": [
+      "Vichy government ...",
+      "The resistance of General De Gaulle",
+      "..."
+    ]
+  },
+  "Cold War": {
+    "What were the origins of the conflict": [
+      "Bipolar world: Russia and US",
+      "..."
+    ]
+  }
+}

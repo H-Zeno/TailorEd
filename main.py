@@ -8,7 +8,6 @@ from langchain_core.messages import HumanMessage, AIMessage
 ChatManager = ChatManager()
 
 chat_history = []
-disc
 
 def main():
     print("Start conversation with TailorED (type 'quit' to exit):")
@@ -34,10 +33,14 @@ def main():
             
             
         if ChatManager.state == ChatManager.STATES["DISCUSSING_TOPIC"]:
-            response_text = ChatManager.discussion_messages(ChatManager.discussion_topic, user_input=user_input, chat_history=chat_history)
+            response_text = ChatManager.discussion_messages(main_concept=ChatManager.discussion_topic, relevant_data=ChatManager.relevant_data, user_input=user_input, chat_history=chat_history)
             chat_history.append(HumanMessage(content=user_input))
             chat_history.append(AIMessage(content=response_text))
-        
+
+            if response_text[-16:] == "FULLY_UNDERSTOOD":
+                ChatManager.state = ChatManager.STATES["IDLE"]
+            else:
+                pass
         
         
     

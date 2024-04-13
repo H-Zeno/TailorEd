@@ -21,6 +21,7 @@ class ChatManager:
     def __init__(self) -> None:
         self.state = self.STATES["START"]
         self.discussion_topic = None
+        self.relevant_data = None
         
     
     # Concept and key points
@@ -36,13 +37,20 @@ class ChatManager:
         })
         
         return welcome_response
+    
+    def choose_discussion_topic(self, chat_history: list) -> str:
+        print("CHOOSE DISCUSSION TOPIC")
+        # Choose the next discussion topic based on the recent conversational history
+        
         
     
-    def discussion_messages(self, remaining_main_concepts: list, user_input: str, chat_history: list) -> str:
+    def discussion_messages(self, user_input: str, chat_history: list,  main_concept: str, relevant_data: str) -> str:
         print("START DISCUSSION WITH TailorED (about a specific topic/concept)")
         response_dict = retrieval_chain.invoke({
             "chat_history": chat_history,
-            "input": user_input
+            "input": user_input,
+            "current_main_concept": main_concept,	
+            "relevant_data": relevant_data
             })
         response_text = response_dict.get('answer', 'No answer provided')  # Default message if 'answer' is missing
         return response_text

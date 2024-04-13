@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import json
 import langchain
 from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
@@ -31,6 +32,8 @@ db = FAISS.load_local("Vector_DB/lecture_crusades", embeddings, allow_dangerous_
 chat_history = []
 
 
+remaining_concepts = []
+
 # welcome chain
 welcome_prompt = ChatPromptTemplate.from_messages([
     ("system", "You are an expert tutor for a highschool class who helps this important student to fully understand the course material of this lecture. You are always clear in your explanations, you encourage the student and ask the student questions related to the main concepts and course transcript to help them understand the material fully. You are now provided with the main concepts (and corresponding key data) and it is your IMPORTANT job to make the student understand the all the main concepts fundamentally. Keep on asking questions to the student until the student understands the material. Now tell the student that you are ready to help them practice and understand the material. Summarize in your own words the main concepts and of the lecture and ask the student if he has any questions. These are the main concepts: \n\n{context}"),
@@ -39,7 +42,10 @@ welcome_prompt = ChatPromptTemplate.from_messages([
 ])
 welcome_document_chain = create_stuff_documents_chain(llm, welcome_prompt) 
 
-# choose 
+# idle (choose discussion topic) chain
+idle_prompt = ChatPromptTemplate.from_messages([
+    ("system", "Choose the next teaching concept from the list of concepts ")
+])
 
 ### Retrieval chain for questions about the lecture transcript (in discussion)
 # Retrieve relevant documents (in the database) based on the conversation history
@@ -52,7 +58,9 @@ retrieve_query_prompt = ChatPromptTemplate.from_messages([
 retrieve_context_chain = create_history_aware_retriever(llm, retriever, retrieve_query_prompt)
 # Answer the user's questions based on the context of the conversation
 prompt_answer_with_context = ChatPromptTemplate.from_messages([
-    ("system", "Answer the student's questions based on the transcript from his class lecture. It is important that you can only provide information that you know is true (scientifically) and is given in the transcript of the lecture. If the student answers a previous question and it is correct (scientifically + transcript), you give the student a compliment and return 'CORRECT'at the end of the message. When the student has a question, you do NOT directly give him the answer, but ask the student critical questions so they can come to the answer themselves. Always be clear, encouraging and precise in your answers and ask the student questions. This is the context: \n\n{context}"), 
+    ("system", "Current main concept: {current_main_concept}. Make sure that the student explains this main concept and showcases deep understanding."),
+    ("system", "Relevant and correct data: {relevant_data}"),
+    ("system", "Answer the student's questions based on the transcript from his class lecture. It is important that you can only provide information that you know is true (scientifically) and is given in the transcript of the lecture. If the student answers a previous question correctly (scientifically + transcript) and the student fully understands the current main concept, you give the student a compliment and return 'FULLY_UNDERSTOOD'at the end of the message (EXATLY THE END, NOTHING MORE). If the student doesn't fully understand the current main concept, keep on asking. When the student has a question, you do NOT directly give him the answer, but ask the student critical questions so they can come to the answer themselves. Always be clear, encouraging and precise in your answers and ask the student questions. This is the context: \n\n{context}"), 
     MessagesPlaceholder(variable_name="chat_history"),
     ("user", "{input}"),
 ])

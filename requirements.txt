@@ -5,3 +5,4 @@ langchain_commmunity
 faiss-cpu
 langchain-ai21
 openai
+semantic_text_splitter
