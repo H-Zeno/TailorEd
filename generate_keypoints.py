@@ -26,12 +26,15 @@ def json_to_markdown(json_data):
         markdown_text += "\n"
     return markdown_text
 
+with open('paths.json', 'r') as file:
+    config = json.load(file)
+    
+file_path = config['file_path']
+#get the course name from the file_path
+courseName = os.path.basename(file_path).split('.')[0]
 
-courseName = "Content/mathematicScript"
-
-loader = TextLoader(courseName + ".txt")
+loader = TextLoader(file_path)
 documents = loader.load()
-# print(documents[0].page_content)
 
 max_characters = 1000
 splitter = TextSplitter()

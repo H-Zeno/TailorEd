@@ -25,7 +25,11 @@ def main():
     print("Start conversation with TailorED (type 'quit' to exit):")
     
     while True:
-        if not ChatManager.state == ChatManager.STATES["START"] and not ChatManager.state == ChatManager.STATES["CHOOSE_TOPIC"]:
+        if ChatManager.remaining_concepts == []:
+            ChatManager.state = ChatManager.STATES["END"]
+        
+        # DON'T ASK FOR USER INPUT IF THE STATE IS START OR END
+        if not ChatManager.state == ChatManager.STATES["START"] and not ChatManager.state == ChatManager.STATES["END"]:
             user_input = input("You: ")
             if user_input.lower() == 'quit':
                 print("Thank you for practicing together! Let's continue where we left off next time.")
@@ -48,22 +52,37 @@ def main():
                 # remove the last discussed topic from the list of remaining topics
                 ChatManager.remaining_concepts.pop(ChatManager.topic_index)
             print("Remaining concepts: ", str(ChatManager.remaining_concepts))
-            topic, topic_index = ChatManager.choose_discussion_topic(chat_history=chat_history, remaining_concepts=ChatManager.remaining_concepts)
-            #topic_index = ChatManager.remaining_concepts.index(topic[0])
+            topic, topic_index = ChatManager.choose_discussion_topic(chat_history=chat_history, remaining_concepts=str(ChatManager.remaining_concepts))
             
             ChatManager.discussion_topic = topic
             ChatManager.topic_index = topic_index
-            ChatManager.relevant_data = str(main_concepts_JSON[topic])
+            
+            ChatManager.relevant_questions = []
+            ChatManager.relevant_data = []
+            for question, data in main_concepts_JSON[topic].items():
+                ChatManager.relevant_questions.append(question)
+                ChatManager.relevant_data.append(data)
+        
+            ## NEW TOPIC QUESTION
+            #print('relevant data:', str(ChatManager.relevant_data))
+            #print('current main concept:', ChatManager.discussion_topic)
+            ##relevant_data_string = ''.join([''.join(inner_list) for inner_list in ChatManager.relevant_data])
+            #response_text = ChatManager.new_topic_question(chat_history=chat_history, current_main_concept=ChatManager.discussion_topic) #, relevant_questions = ''.join(ChatManager.relevant_questions), relevant_data=relevant_data_string
+            #chat_history.append(HumanMessage(content=user_input))
+            #chat_history.append(AIMessage(content=response_text))
+            
             ChatManager.state = ChatManager.STATES["DISCUSSING_TOPIC"]
+            
         
         # DISCUSSING TOPIC
         if ChatManager.state == ChatManager.STATES["DISCUSSING_TOPIC"]:
-            response_text = ChatManager.discussion_messages(main_concept=ChatManager.discussion_topic, relevant_data=ChatManager.relevant_data, user_input=user_input, chat_history=chat_history)
+            response_text = ChatManager.discussion_messages(main_concept=ChatManager.discussion_topic, relevant_questions=ChatManager.relevant_questions, relevant_data=ChatManager.relevant_data, user_input=user_input, chat_history=chat_history)
             chat_history.append(HumanMessage(content=user_input))
             chat_history.append(AIMessage(content=response_text))
             if response_text[-16:] == "FULLY_UNDERSTOOD":
                 ChatManager.state = ChatManager.STATES["CHOOSE_TOPIC"]
                 response_text = response_text[:-16]
+                print("Katie:", response_text)
                 continue
             else:
                 pass
