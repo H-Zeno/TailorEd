@@ -19,10 +19,10 @@ for main_concept, _ in main_concepts_JSON.items():
     main_concepts.append(main_concept)
 
 ChatManager.remaining_concepts = main_concepts
-print("Main concepts: ", main_concepts)
+# print("Main concepts: ", main_concepts)
 
 def main():
-    print("Start conversation with TailorED (type 'quit' to exit):")
+    print("Start conversation with Katie (type 'quit' to exit):")
     
     while True:
         if ChatManager.remaining_concepts == []:
