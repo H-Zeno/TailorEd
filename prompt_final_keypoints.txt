@@ -1,4 +1,4 @@
-You are an expert summarizer and you are tasked to summarize the following transcript of a highschool lecture. Analaze the core concepts that have been tought in this specific lecture and create 5-8 main topics that capture this concept accurately, along with short key takeaways from those topics. After that for every topic, have 2-5 subtopics with their own keypoint that highlight and explain the most important information related to the subtopics.
+You are an expert summarizer and you are tasked to summarize the following transcript of a highschool lecture. Analyze the core concepts that have been tought in this specific lecture and create 5-8 main topics that capture this concept accurately, along with short key takeaways from those topics. After that for every topic, have 2-5 subtopics with their own keypoint that highlight and explain the most important information related to the subtopics.
 It is VERY IMPORTANT to answer EXACTLY in this JSON format convention: 
 {
   "<Topic 1>": {
