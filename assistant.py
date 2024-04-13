@@ -49,8 +49,8 @@ choose_topic_prompt = ChatPromptTemplate.from_messages([
     MessagesPlaceholder(variable_name="chat_history"),
     ("system", "Choose the next teaching concept (from the list of concepts that will be provided to you) that is most related to the recent conversations that you had with the student."),
     ("system", "List of teaching concepts: {context}"),
-    ("system", "Output EXACTLY this dictionary: {'concept': 'index of the concept in the list (0 is the first concept)'}"),
-    ("system", "example output: {'Conquest of Jerusalem and its Aftermath': 0}")
+    ("system", "Output EXACTLY this dictionary: ['concept name', 'index of the concept in the list (0 is the first concept)']"),
+    ("system", "example output: ['Conquest of Jerusalem and its Aftermath', 0]")
 ])
 choose_topic_document_chain = create_stuff_documents_chain(llm, choose_topic_prompt)
 

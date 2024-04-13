@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 import langchain
 import json
+import ast
 from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
 from assistant import welcome_document_chain, choose_topic_document_chain, retrieval_chain
@@ -47,8 +48,8 @@ class ChatManager:
             })
         
         print("TOPIC RESPONSE:", topic_response)
-        try: 
-            topic_list = json.loads(topic_response)
+        try:
+            topic_list = ast.literal_eval(topic_response)
             topic = topic_list[0]
             topic_index = topic_list[1]
             print("TOPIC INDEX:", topic_index)
