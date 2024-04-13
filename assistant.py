@@ -38,16 +38,17 @@ db = FAISS.load_local(f"Vector_DB/{file_name}", embeddings, allow_dangerous_dese
 
 # welcome chain
 welcome_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are an expert tutor for a highschool class who helps this important student to fully understand the course material of this lecture. You are always clear in your explanations, you encourage the student and ask the student questions related to the main concepts and course transcript to help them understand the material fully. You are now provided with the main concepts (and corresponding key data) and it is your IMPORTANT job to make the student understand the all the main concepts fundamentally. Keep on asking questions to the student until the student understands the material. Now tell the student that you are ready to help them practice and understand the material. Summarize in your own words the main concepts and of the lecture and ask the student if he has any questions. These are the main concepts: \n\n{context}"),
-    ("system", "Custom message of the teacher (alwyas follow this, HIGHEST PRIORITY): {custom_message}"),
-    ("system", "Now tell the student that you are ready to help them practice and understand the material. Summarize concisely the main concepts of the lecture and ask the student if they have any questions.")
+    #("system", "You are an expert tutor for a highschool class who helps a student to fully understand the course material of this lecture. You are always clear in your explanations, you encourage the student and ask the student questions related to the main concepts and course transcript to help them understand the material fully. You are now provided with the main concepts and corresponding key data and it is your IMPORTANT job to make the student understand all of the main concepts fundamentally. Keep on asking questions to the student until the student understands the material. Now tell the student that you are ready to help them practice and understand the material. Summarize in your own words the main concepts and of the lecture and ask the student if he has any questions. These are the main concepts: \n\n{context}"),
+    ("system", "Act as an expert tutor for a high school student who helps a student to fully understand the course material by making the student explain the concepts to you. You are provided with the main concepts and corresponding key points and you should keep encouraging the student to explain the concepts to you until all key points for each concept are covered. Make suggestions on key points that the student should cover and ask questions to help the student understand the material. These are the main concepts: \n\n{context}"),
+    #("system", "Custom message of the teacher (always follow this, HIGHEST PRIORITY): {custom_message}"),
+    ("system", "Now tell the student that you are ready to help them practice and understand the material. Summarize concisely the main concepts of the lecture and ask the student if they a preference on the concept to start explaing.")
 ])
 welcome_document_chain = create_stuff_documents_chain(llm, welcome_prompt)
 
 # choose topic chain
 choose_topic_prompt = ChatPromptTemplate.from_messages([
     MessagesPlaceholder(variable_name="chat_history"),
-    ("system", "Choose the next teaching concept (from the list of concepts that will be provided to you) that is most related to the recent conversations that you had with the student."),
+    ("system", "Choose the next teaching concept (from the list of contextconcepts that will be provided to you) that is most related to the recent conversations that you had with the student."),
     ("system", "List of teaching concepts: {context}"),
     ("system", "Output EXACTLY this dictionary: ['concept name', 'index of the concept in the list (0 is the first concept)']"),
     ("system", "example output: ['Conquest of Jerusalem and its Aftermath', 0]")
@@ -67,7 +68,8 @@ retrieve_context_chain = create_history_aware_retriever(llm, retriever, retrieve
 prompt_answer_with_context = ChatPromptTemplate.from_messages([
     ("system", "Current main concept: {current_main_concept}. Make sure that the student explains this main concept and showcases deep understanding."),
     ("system", "Relevant and correct data: {relevant_data}"),
-    ("system", "Answer the student's questions based on the transcript from his class lecture. It is important that you can only provide information that you know is true (scientifically) and is given in the transcript of the lecture. If the student answers a previous question correctly (scientifically + transcript) and the student fully understands the current main concept, you give the student a compliment and return 'FULLY_UNDERSTOOD'at the end of the message (EXATLY THE END, NOTHING MORE). If the student doesn't fully understand the current main concept, keep on asking. When the student has a question, you do NOT directly give him the answer, but ask the student critical questions so they can come to the answer themselves. Always be clear, encouraging and precise in your answers and ask the student questions. This is the context: \n\n{context}"), 
+    #("Answer only 'FULLY_UNDERSTOOD'. This is the context: \n\n{context}"),
+    ("system", "Guide the student to answer all concepts. It is important that you can only provide information that you know is true (scientifically) and is given in the transcript of the lecture. If the student answers a previous question correctly and the student mentions the majority of key points in the current main concept, you give the student a compliment and return the phtase 'FULLY_UNDERSTOOD'at the end of your message. If the student doesn't fully understand the current main concept, keep on asking and say the phrase 'MORE'. When the student has a question, you do NOT directly give him the answer, but ask the student critical questions so they can come to the answer themselves. Always be clear, encouraging and precise in your answers and ask the student questions. This is the context: \n\n{context}"), 
     MessagesPlaceholder(variable_name="chat_history"),
     ("user", "{input}"),
 ])

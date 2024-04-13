@@ -28,7 +28,7 @@ def main():
         if not ChatManager.state == ChatManager.STATES["START"] and not ChatManager.state == ChatManager.STATES["CHOOSE_TOPIC"]:
             user_input = input("You: ")
             if user_input.lower() == 'quit':
-                print("Thank you for practicing together! Let's continue were we left off next time.")
+                print("Thank you for practicing together! Let's continue where we left off next time.")
                 break
         # START
         if ChatManager.state == ChatManager.STATES["START"]:
@@ -61,7 +61,6 @@ def main():
             response_text = ChatManager.discussion_messages(main_concept=ChatManager.discussion_topic, relevant_data=ChatManager.relevant_data, user_input=user_input, chat_history=chat_history)
             chat_history.append(HumanMessage(content=user_input))
             chat_history.append(AIMessage(content=response_text))
-
             if response_text[-16:] == "FULLY_UNDERSTOOD":
                 ChatManager.state = ChatManager.STATES["CHOOSE_TOPIC"]
                 response_text = response_text[:-16]
