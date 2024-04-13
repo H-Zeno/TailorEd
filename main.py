@@ -15,7 +15,7 @@ with open(config['JSON_file_path'], 'r') as file:
     main_concepts_JSON = json.load(file)
     
 # Iterate over each major section and collect relevant data
-for main_concept, relevant_data in main_concepts_JSON.items():
+for main_concept, _ in main_concepts_JSON.items():
     main_concepts.append(main_concept)
 
 ChatManager.remaining_concepts = main_concepts
@@ -53,6 +53,7 @@ def main():
             
             ChatManager.discussion_topic = topic
             ChatManager.topic_index = topic_index
+            ChatManager.relevant_data = str(main_concepts_JSON[topic])
             ChatManager.state = ChatManager.STATES["DISCUSSING_TOPIC"]
         
         # DISCUSSING TOPIC

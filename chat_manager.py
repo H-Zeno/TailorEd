@@ -62,7 +62,7 @@ class ChatManager:
         
     
     def discussion_messages(self, user_input: str, chat_history: list,  main_concept: str, relevant_data: str) -> str:
-        print("START DISCUSSION WITH TailorED (about a specific topic/concept)")
+        print("IN DISCUSSION")
         response_dict = retrieval_chain.invoke({
             "chat_history": chat_history,
             "input": user_input,
